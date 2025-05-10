@@ -721,7 +721,8 @@
         const maxAngularSpeed = 0.15; // Max angular speed (radians per frame)
 
         // --- Collision Properties ---
-        const collisionBuffer = 5; // Extra distance for collision detection (world units)
+        // Removed collisionBuffer - using precise circumcircle radius
+        // const collisionBuffer = 5; // Extra distance for collision detection (world units)
         const finishLineWidth = 40; // Fixed width for the checkered finish line rectangle (world units)
 
 
@@ -1186,7 +1187,8 @@
              let closestSegment = null;
              let minDistance = Infinity;
              // Use the triangle's collision radius (circumcircle radius)
-             const collisionCheckRadius = triangleCollisionRadius + collisionBuffer;
+             // Removed collisionBuffer here
+             const collisionCheckRadius = triangleCollisionRadius;
 
 
              for (const segment of segments) {
@@ -1242,7 +1244,8 @@
         // Check for collisions between the triangle and placed obstacles at a given position
         // This function is now simplified, only checking for segment collisions.
         function checkCollisions(checkX, checkY) {
-            const segmentCollisionRadius = triangleCollisionRadius + collisionBuffer;
+            // Removed collisionBuffer here
+            const segmentCollisionRadius = triangleCollisionRadius;
 
             // Check collision with white segments
             for (const segment of segments) {
@@ -1324,7 +1327,8 @@
             let finalVx = potentialVx;
             let finalVy = potentialVy;
 
-            const segmentCollisionRadius = triangleCollisionRadius + collisionBuffer;
+            // Removed collisionBuffer here
+            const segmentCollisionRadius = triangleCollisionRadius;
 
 
             // Find the closest white segment and its distance
@@ -1368,7 +1372,8 @@
 
                      // Optional: Adjust position slightly to push it out of the wall if it got stuck inside
                      const currentDistToSegment = pointToSegmentDistance(triangleX, triangleY, closestSegment.node1.x, closestSegment.node1.y, closestSegment.node2.x, closestSegment.node2.y);
-                     const penetrationDepthSegment = (triangleCollisionRadius + collisionBuffer) - currentDistToSegment;
+                     // Removed collisionBuffer here
+                     const penetrationDepthSegment = triangleCollisionRadius - currentDistToSegment;
 
                      if (penetrationDepthSegment > 0) {
                           // Calculate the wall normal vector (perpendicular to segment)
@@ -2690,7 +2695,7 @@
              // This logic seems fine.
 
              activeWhiteNode = null; // Clear any active node
-             activeBlackNode = null; // Clear any active black node
+             activeBlackNode = null; // Clear any black node
              clearSelection(); // Clear any active selection
              isWhitePlacementActive = true; // Start creator in white placement mode
              updateSelectedColorUI(); // Update UI
