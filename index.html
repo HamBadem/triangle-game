@@ -1202,24 +1202,6 @@
              return closestSegment;
          }
 
-         // Helper function to find the closest white node to a point within collision range
-         function findClosestWhiteNode(px, py) {
-             let closestNode = null;
-             let minDistance = Infinity;
-             const collisionCheckRadius = triangleCollisionRadius + nodeCollisionRadius + collisionBuffer;
-
-             for (const node of nodes) {
-                  if (node.color === 'white') { // Only check white nodes
-                       const dist = distance({x: px, y: py}, {x: node.x, y: node.y});
-                       if (dist < collisionCheckRadius && dist < minDistance) {
-                            minDistance = dist;
-                            closestNode = node;
-                       }
-                  }
-             }
-             return closestNode;
-         }
-
 
         // Helper function to find a node near given world coordinates within a tolerance
          // This is used for clicking/selecting nodes in the creator, not for physics collision
@@ -1258,12 +1240,9 @@
 
 
         // Check for collisions between the triangle and placed obstacles at a given position
-        // This function is now simplified, just checking if *any* collision occurs,
-        // the response logic is in updatePhysics.
+        // This function is now simplified, only checking for segment collisions.
         function checkCollisions(checkX, checkY) {
             const segmentCollisionRadius = triangleCollisionRadius + collisionBuffer;
-            const nodeCollisionCheckRadius = triangleCollisionRadius + nodeCollisionRadius + collisionBuffer;
-
 
             // Check collision with white segments
             for (const segment of segments) {
@@ -1280,18 +1259,7 @@
                 }
             }
 
-             // Check collision with white nodes
-             for (const node of nodes) {
-                  if (node.color === 'white') { // Only check white nodes
-                       const dist = distance({x: checkX, y: checkY}, {x: node.x, y: node.y});
-                       if (dist < nodeCollisionCheckRadius) {
-                            return true; // Collision detected with a white node
-                       }
-                  }
-             }
-
-
-            // Check collision with finish lines (checkered rectangles)
+            // Check collision with finish lines (checkered rectangles) - This is a win condition, not a wall collision
             for (const finishLine of finishLines) {
                  if (isPointInsideCheckeredRectangle(checkX, checkY, finishLine.node1, finishLine.node2)) {
                       // Collision with a finish line - WIN CONDITION!
@@ -1301,8 +1269,7 @@
                  }
             }
 
-
-            return false; // No collision detected with walls or nodes
+            return false; // No collision detected with white segments
         }
 
 
@@ -1352,13 +1319,12 @@
             const nextTriangleX = triangleX + potentialVx;
             const nextTriangleY = triangleY + potentialVy;
 
-            // --- Collision Response ---
+            // --- Collision Response (Only with segments now) ---
 
             let finalVx = potentialVx;
             let finalVy = potentialVy;
 
             const segmentCollisionRadius = triangleCollisionRadius + collisionBuffer;
-            const nodeCollisionCheckRadius = triangleCollisionRadius + nodeCollisionRadius + collisionBuffer;
 
 
             // Find the closest white segment and its distance
@@ -1374,42 +1340,10 @@
                 }
             }
 
-             // Find the closest white node and its distance
-             let closestNode = null;
-             let minNodeDistance = Infinity;
-             for (const node of nodes) {
-                  if (node.color === 'white') {
-                       const dist = distance({x: nextTriangleX, y: nextTriangleY}, {x: node.x, y: node.y});
-                       if (dist < nodeCollisionCheckRadius && dist < minNodeDistance) {
-                            minNodeDistance = dist;
-                            closestNode = node;
-                       }
-                  }
-             }
+             // Removed node collision detection and response logic
 
 
-             // Prioritize node collision if it's closer or within a certain proximity
-             if (closestNode && (minNodeDistance <= minSegmentDistance || minNodeDistance < triangleCollisionRadius * 2)) {
-                 // Collision detected with a node - stop linear movement
-                 finalVx = 0;
-                 finalVy = 0;
-                 console.log("Collision with Node detected. Stopping movement.");
-
-                 // Optional: Push triangle out of the node if stuck
-                 const currentDistToNode = distance({x: triangleX, y: triangleY}, {x: closestNode.x, y: closestNode.y});
-                 const penetrationDepthNode = (triangleCollisionRadius + nodeCollisionRadius + collisionBuffer) - currentDistToNode;
-                 if (penetrationDepthNode > 0) {
-                      const normalX = triangleX - closestNode.x;
-                      const normalY = triangleY - closestNode.y;
-                      const normalLen = Math.sqrt(normalX * normalX + normalY * normalY);
-                       if (normalLen > 0) {
-                            triangleX += (normalX / normalLen) * penetrationDepthNode;
-                            triangleY += (normalY / normalLen) * penetrationDepthNode;
-                       }
-                 }
-
-
-             } else if (closestSegment) {
+             if (closestSegment) {
                 // Collision detected with a segment - adjust velocity to slide along the wall
 
                 // Calculate the segment vector
@@ -2138,25 +2072,31 @@
 
              let saveSuccessful = false;
 
-             if (saveType === 'official' && loggedInUser === 'HamBadem2') {
-                  officialLevels[levelName.trim()] = levelData;
-                  localStorage.setItem('officialLevels', JSON.stringify(officialLevels));
-                  console.log(`Level "${levelName.trim()}" saved as Official Level.`);
-                  displayMessage(`Level "${levelName.trim()}" saved as Official!`);
-                  saveSuccessful = true;
-             } else if (saveType === 'my') {
-                  users[loggedInUser].levels[levelName.trim()] = levelData;
-                  localStorage.setItem('triangleGameUsers', JSON.stringify(users));
-                  console.log(`Level "${levelName.trim()}" saved as My Level for user "${loggedInUser}".`);
-                  displayMessage(`Level "${levelName.trim()}" saved to My Levels!`);
-                  saveSuccessful = true;
-             } else if (saveType === 'official' && loggedInUser !== 'HamBadem2') {
-                 displayMessage("Only HamBadem2 can save official levels.", true);
-                 console.log("Attempted to save official level by non-admin user.");
-             } else {
-                 displayMessage("Invalid save type.", true);
-                 console.log("Invalid save type provided.");
+             try {
+                 if (saveType === 'official' && loggedInUser === 'HamBadem2') {
+                      officialLevels[levelName.trim()] = levelData;
+                      localStorage.setItem('officialLevels', JSON.stringify(officialLevels));
+                      console.log(`Level "${levelName.trim()}" saved as Official Level.`);
+                      displayMessage(`Level "${levelName.trim()}" saved as Official!`);
+                      saveSuccessful = true;
+                 } else if (saveType === 'my') {
+                      users[loggedInUser].levels[levelName.trim()] = levelData;
+                      localStorage.setItem('triangleGameUsers', JSON.stringify(users));
+                      console.log(`Level "${levelName.trim()}" saved as My Level for user "${loggedInUser}".`);
+                      displayMessage(`Level "${levelName.trim()}" saved to My Levels!`);
+                      saveSuccessful = true;
+                 } else if (saveType === 'official' && loggedInUser !== 'HamBadem2') {
+                     displayMessage("Only HamBadem2 can save official levels.", true);
+                     console.log("Attempted to save official level by non-admin user.");
+                 } else {
+                     displayMessage("Invalid save type.", true);
+                     console.log("Invalid save type provided.");
+                 }
+             } catch (e) {
+                 console.error("Error saving level to localStorage:", e);
+                 displayMessage("Error saving level. Storage might be full or unavailable.", true);
              }
+
 
              // After saving (or attempting to save), refresh the level list
              if (saveSuccessful) {
@@ -2214,16 +2154,23 @@
              }
 
             let levelData = null;
-            if (type === 'my') {
-                 const users = JSON.parse(localStorage.getItem('triangleGameUsers') || '{}');
-                 levelData = users[loggedInUser] && users[loggedInUser].levels ? users[loggedInUser].levels[levelName] : null;
-            } else if (type === 'official') {
-                 const officialLevels = JSON.parse(localStorage.getItem('officialLevels') || '{}');
-                 levelData = officialLevels[levelName] || null;
+            try {
+                if (type === 'my') {
+                     const users = JSON.parse(localStorage.getItem('triangleGameUsers') || '{}');
+                     levelData = users[loggedInUser] && users[loggedInUser].levels ? users[loggedInUser].levels[levelName] : null;
+                } else if (type === 'official') {
+                     const officialLevels = JSON.parse(localStorage.getItem('officialLevels') || '{}');
+                     levelData = officialLevels[levelName] || null;
+                }
+            } catch (e) {
+                 console.error("Error reading level data from localStorage:", e);
+                 displayMessage("Error loading level. Storage might be corrupted or unavailable.", true);
+                 return; // Stop loading if reading fails
             }
 
 
             if (levelData) {
+                console.log(`Attempting to load level "${levelName}" (${type}). Level data:`, levelData);
                 // Clear current level data
                 nodes = [];
                 segments = [];
@@ -2240,6 +2187,7 @@
                     levelData.nodes.forEach(nodeData => {
                         nodes.push({ ...nodeData });
                     });
+                    console.log("Nodes loaded:", nodes);
                 } else {
                     console.warn(`Level "${levelName}" (${type}) for user "${loggedInUser}" has no valid node data.`);
                     displayMessage(`Error loading level "${levelName}": Invalid node data.`, true);
@@ -2256,7 +2204,7 @@
                         if (node1 && node2) {
                             segments.push({ node1: node1, node2: node2, color: segmentData.color });
                         } else {
-                            console.error("Failed to find nodes for segment during load.");
+                            console.error("Failed to find nodes for segment during load. Segment data:", segmentData);
                             displayMessage(`Error loading level "${levelName}": Failed to find segment nodes.`, true);
                              // Decide how to handle this - maybe clear partially loaded level?
                              nodes = [];
@@ -2265,6 +2213,7 @@
                              return; // Stop loading
                         }
                     });
+                    console.log("Segments loaded:", segments);
                 } else {
                      console.warn(`Level "${levelName}" (${type}) for user "${loggedInUser}" has no valid segment data.`);
                      displayMessage(`Error loading level "${levelName}": Invalid segment data.`, true);
@@ -2281,7 +2230,7 @@
                           if (node1 && node2) {
                               finishLines.push({ node1: node1, node2: node2 }); // Store node references
                           } else {
-                               console.error("Failed to find nodes for finish line during load.");
+                               console.error("Failed to find nodes for finish line during load. Finish line data:", finishLineData);
                                displayMessage(`Error loading level "${levelName}": Failed to find finish line nodes.`, true);
                                // Decide how to handle this - maybe clear partially loaded level?
                                nodes = [];
@@ -2290,6 +2239,7 @@
                                return; // Stop loading
                           }
                       });
+                      console.log("Finish lines loaded:", finishLines);
                  } else {
                       console.warn(`Level "${levelName}" (${type}) for user "${loggedInUser}" has no valid finish line data.`);
                       // This is a warning, not an error, as older levels might not have finishLines
