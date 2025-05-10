@@ -1,0 +1,2910 @@
+<!DOCTYPE html>
+<html lang="en" >
+<head>
+  <meta charset="UTF-8">
+  <title>Narrow Arrow</title>
+  
+
+</head>
+<body>
+<!-- partial:index.partial.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Triangle Game Menu & Creator</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #222;
+            font-family: 'Press Start 2P', cursive;
+            color: #fff;
+            flex-direction: column; /* Arrange items vertically */
+            user-select: none; /* Prevent text selection while dragging */
+            -webkit-user-select: none; /* Safari */
+            -ms-user-select: none; /* IE 10+ */
+        }
+        canvas {
+            background-color: #000;
+            display: none; /* Hide canvas initially */
+            border: 2px solid #fff;
+            border-radius: 10px;
+        }
+        #menu {
+            display: flex; /* Flex is the default display for the menu */
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            border: 2px solid #fff;
+            border-radius: 10px;
+            background-color: #333;
+        }
+        .menu-button {
+            background-color: #00ff00;
+            color: #000;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 1em;
+            padding: 10px 20px;
+            margin: 10px 0;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.3s ease;
+        }
+        .menu-button:hover {
+            background-color: #00cc00;
+        }
+        .menu-button svg {
+            margin-right: 8px; /* Space between icon and text */
+            width: 1em; /* Icon size relative to font size */
+            height: 1em;
+            fill: currentColor; /* Make SVG color match button text color */
+        }
+
+        /* --- Color Menu Styles --- */
+        #color-menu {
+            position: absolute; /* Position above the canvas */
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%); /* Center horizontally */
+            display: none; /* Hide initially */
+            flex-direction: row; /* Arrange color squares horizontally */
+            gap: 10px; /* Space between squares */
+            padding: 10px;
+            background-color: #333;
+            border-radius: 5px;
+            z-index: 10; /* Ensure it's on top of the canvas */
+            border: 2px solid #fff;
+        }
+        .color-square {
+            width: 30px;
+            height: 30px;
+            border: 2px solid transparent; /* Start with transparent border */
+            box-sizing: border-box; /* Include border in element's total width/height */
+            cursor: pointer;
+            transition: border-color 0.1s ease;
+            display: flex; /* Use flex to center content */
+            align-items: center;
+            justify-content: center;
+        }
+         .color-square:hover {
+             border-color: #ccc; /* Light border on hover */
+         }
+        .color-square.selected-color {
+            border-color: gold; /* Gold border for selected color */
+        }
+
+        /* Style for the checkered black square SVG */
+        .color-square svg {
+            width: 100%; /* Make SVG fill the square */
+            height: 100%;
+            display: block; /* Remove extra space below SVG */
+        }
+
+
+        /* --- Level Creator Controls (including Save, Edit/Delete) --- */
+        #creator-controls {
+             position: absolute;
+             bottom: 10px;
+             left: 50%;
+             transform: translateX(-50%);
+             display: none; /* Hide initially */
+             flex-direction: row;
+             gap: 10px;
+             padding: 10px;
+             background-color: #333;
+             border-radius: 5px;
+             z-index: 10;
+             border: 2px solid #fff;
+        }
+        #creator-controls button {
+             color: #fff;
+             font-family: 'Press Start 2P', cursive;
+             font-size: 0.8em;
+             padding: 8px 15px;
+             border: none;
+             border-radius: 5px;
+             cursor: pointer;
+             transition: background-color 0.3s ease;
+        }
+        #creator-controls #saveLevelButton {
+             background-color: #007bff; /* Blue color for save level */
+        }
+         #creator-controls #saveLevelButton:hover {
+             background-color: #0056b3;
+        }
+
+        /* Styles for the segment edit/delete buttons */
+        #segment-edit-controls {
+             position: absolute;
+             bottom: 60px; /* Position above creator-controls */
+             left: 50%;
+             transform: translateX(-50%);
+             display: none; /* Hide initially */
+             flex-direction: row;
+             gap: 10px;
+             padding: 10px;
+             background-color: #333;
+             border-radius: 5px;
+             z-index: 10;
+             border: 2px solid #fff;
+        }
+         #segment-edit-controls button {
+             color: #fff;
+             font-family: 'Press Start 2P', cursive;
+             font-size: 0.8em;
+             padding: 8px; /* Equal padding for square buttons */
+             border: none;
+             border-radius: 5px;
+             cursor: pointer;
+             transition: background-color 0.3s ease;
+             display: flex; /* Use flex to center icon */
+             align-items: center;
+             justify-content: center;
+         }
+         #segment-edit-controls .save-segment-button {
+             background-color: #28a745; /* Green color for save segment */
+         }
+         #segment-edit-controls .save-segment-button:hover {
+             background-color: #218838;
+         }
+          #segment-edit-controls .delete-segment-button {
+             background-color: #dc3545; /* Red color for delete segment */
+         }
+         #segment-edit-controls .delete-segment-button:hover {
+             background-color: #c82333;
+         }
+         #segment-edit-controls button svg {
+             width: 1em; /* Icon size */
+             height: 1em;
+             fill: currentColor; /* Make SVG color match button text color */
+             margin: 0; /* Remove default svg margin */
+         }
+
+
+        /* --- Level Selection Menu Styles --- */
+        #level-selection {
+            margin-top: 20px;
+            padding-top: 10px;
+            border-top: 2px solid #fff;
+            width: 100%;
+            text-align: center;
+            display: none; /* Hide by default, shown when logged in */
+            flex-direction: column; /* Ensure children are stacked vertically */
+            align-items: center; /* Center children horizontally */
+        }
+        #level-selection h3 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            font-size: 1em;
+        }
+        #level-tabs {
+            display: flex;
+            flex-direction: row;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        #level-tabs button {
+             font-family: 'Press Start 2P', cursive;
+             font-size: 0.8em;
+             padding: 8px 15px;
+             border: none;
+             border-radius: 5px;
+             cursor: pointer;
+             transition: background-color 0.3s ease;
+             background-color: #555; /* Default tab color */
+             color: #fff;
+        }
+        #level-tabs button.active-tab {
+            background-color: #007bff; /* Active tab color */
+        }
+         #no-levels-message { /* Style for the new paragraph */
+            font-size: 0.8em;
+            margin-top: 10px; /* Add space above the message */
+            display: none; /* Hide by default */
+         }
+        #level-list, #official-level-list { /* Apply styles to both lists */
+            display: flex; /* Default to flex, but hidden when empty or not active */
+            flex-direction: column;
+            align-items: center;
+            max-height: 200px; /* Limit height and add scroll */
+            overflow-y: auto;
+            padding-right: 10px; /* Space for scrollbar */
+            width: 100%; /* Ensure list takes full width of parent */
+            display: none; /* Hide both lists by default */
+        }
+
+         /* Style for individual level rows */
+         .level-row {
+             display: flex;
+             flex-direction: row;
+             align-items: center;
+             justify-content: center;
+             width: 80%; /* Match level-list width style */
+             margin: 5px 0;
+             gap: 10px; /* Space between buttons */
+         }
+
+         #level-list .level-row button, #official-level-list .level-row button { /* Apply to buttons in both lists */
+             margin: 0; /* Remove margin from individual buttons in the row */
+         }
+
+         #level-list .level-row .load-button, #official-level-list .level-row .load-button { /* Apply to load buttons in both lists */
+             background-color: #ffc107; /* Yellow color for load */
+             color: #000;
+             font-family: 'Press Start 2P', cursive;
+             font-size: 0.9em;
+             padding: 8px 15px;
+             border: none;
+             border-radius: 5px;
+             cursor: pointer;
+             transition: background-color 0.3s ease;
+             flex-grow: 1; /* Allow load button to take available space */
+             text-align: center;
+         }
+         #level-list .level-row .load-button:hover, #official-level-list .level-row .load-button:hover { /* Apply to load buttons in both lists */
+             background-color: #ffa000;
+         }
+
+         .delete-button {
+             background-color: #dc3545; /* Red color for delete */
+             color: #fff;
+             font-family: 'Press Start 2P', cursive;
+             font-size: 0.8em; /* Slightly smaller font for delete */
+             padding: 8px; /* Equal padding for a square shape */
+             border: none;
+             border-radius: 5px;
+             cursor: pointer;
+             transition: background-color 0.3s ease;
+             display: flex; /* Use flex to center icon */
+             align-items: center;
+             justify-content: center;
+         }
+         .delete-button:hover {
+             background-color: #c82333;
+         }
+         .delete-button svg {
+             width: 1em; /* Icon size */
+             height: 1em;
+             fill: currentColor; /* Make SVG color match button text color */
+             margin: 0; /* Remove default svg margin */
+         }
+
+        /* --- Account Form Styles --- */
+        #account-form {
+            display: none; /* Hide initially */
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            border: 2px solid #fff;
+            border-radius: 10px;
+            background-color: #333;
+            width: 300px; /* Fixed width for the form */
+        }
+        #account-form h3 {
+            margin-top: 0;
+            margin-bottom: 20px;
+            font-size: 1.2em;
+        }
+        #account-form input[type="text"],
+        #account-form input[type="password"] {
+            font-family: 'Press Start 2P', cursive;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            width: 100%; /* Make inputs fill the container width */
+            box-sizing: border-box; /* Include padding/border in width */
+            background-color: #444;
+            color: #fff;
+        }
+         #account-form input::placeholder {
+             color: #bbb;
+         }
+        #account-form button {
+            background-color: #007bff;
+            color: #fff;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.9em;
+            padding: 10px 20px;
+            margin-top: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            width: 100%; /* Make buttons fill the container width */
+        }
+        #account-form button:hover {
+            background-color: #0056b3;
+        }
+
+        /* --- Logged In User Display --- */
+        #logged-in-user {
+            font-size: 0.9em;
+            margin-bottom: 10px;
+            text-align: center;
+            display: none; /* Hide initially */
+        }
+        #logged-in-user span {
+            font-weight: bold;
+            color: gold;
+        }
+        #logout-button {
+            background-color: #dc3545; /* Red color for logout */
+            color: #fff;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.8em;
+            padding: 8px 15px;
+            margin-top: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        #logout-button:hover {
+             background-color: #c82333;
+        }
+
+
+        /* --- Message Display Styles --- */
+        #message-display {
+             position: fixed; /* Fixed position on the screen */
+             bottom: 20px;
+             left: 50%;
+             transform: translateX(-50%);
+             padding: 10px 20px;
+             border-radius: 5px;
+             background-color: rgba(0, 0, 0, 0.7); /* Semi-transparent background */
+             color: #fff;
+             font-family: 'Press Start 2P', cursive;
+             font-size: 0.8em;
+             z-index: 100; /* Ensure it's on top of everything */
+             display: none; /* Hide initially */
+             text-align: center;
+        }
+         #message-display.error {
+             background-color: rgba(220, 53, 69, 0.8); /* Red background for errors */
+         }
+
+         /* --- Countdown Styles --- */
+         #countdown {
+             position: absolute;
+             top: 50%;
+             left: 50%;
+             transform: translate(-50%, -50%);
+             font-size: 5em; /* Large font size for countdown */
+             color: gold; /* Gold color for countdown */
+             z-index: 20; /* Ensure it's above canvas */
+             display: none; /* Hide initially */
+         }
+
+         /* --- Timer Styles --- */
+         #timer {
+             position: absolute;
+             top: 10px; /* Position at the top */
+             left: 50%;
+             transform: translateX(-50%); /* Center horizontally */
+             font-size: 1.5em; /* Font size for timer */
+             color: #fff; /* White color for timer */
+             z-index: 20; /* Ensure it's above canvas */
+             display: none; /* Hide initially */
+         }
+
+        /* --- Save Level Form Styles --- */
+        #saveLevelForm {
+            display: none; /* Hide initially */
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            border: 2px solid #fff;
+            border-radius: 10px;
+            background-color: #333;
+            width: 300px; /* Fixed width for the form */
+             position: absolute; /* Position above the canvas/menu */
+             top: 50%;
+             left: 50%;
+             transform: translate(-50%, -50%); /* Center it */
+             z-index: 50; /* Ensure it's on top */
+        }
+        #saveLevelForm h3 {
+            margin-top: 0;
+            margin-bottom: 20px;
+            font-size: 1.2em;
+        }
+        #saveLevelForm input[type="text"] {
+            font-family: 'Press Start 2P', cursive;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            width: 100%; /* Make inputs fill the container width */
+            box-sizing: border-box; /* Include padding/border in width */
+            background-color: #444;
+            color: #fff;
+        }
+         #saveLevelForm input::placeholder {
+             color: #bbb;
+         }
+         #saveLevelForm .save-type-selection {
+             display: flex;
+             flex-direction: column;
+             align-items: flex-start; /* Align radio buttons to the left */
+             margin-bottom: 15px;
+             width: 100%;
+         }
+          #saveLevelForm .save-type-selection label {
+              font-size: 0.9em;
+              margin-bottom: 5px;
+          }
+          #saveLevelForm .save-type-selection div {
+              display: flex;
+              align-items: center;
+          }
+          #saveLevelForm .save-type-selection input[type="radio"] {
+              margin-right: 5px;
+          }
+
+
+        #saveLevelForm .form-buttons {
+             display: flex;
+             flex-direction: row;
+             gap: 10px;
+             width: 100%;
+             justify-content: space-between; /* Distribute buttons */
+        }
+        #saveLevelForm .form-buttons button {
+            color: #fff;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.8em;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            flex-grow: 1; /* Allow buttons to grow */
+            text-align: center;
+        }
+         #saveLevelForm .form-buttons #confirmSaveButton {
+             background-color: #28a745; /* Green for save */
+         }
+         #saveLevelForm .form-buttons #confirmSaveButton:hover {
+             background-color: #218838;
+         }
+          #saveLevelForm .form-buttons #cancelSaveButton {
+             background-color: #dc3545; /* Red for cancel */
+         }
+         #saveLevelForm .form-buttons #cancelSaveButton:hover {
+             background-color: #c82333;
+         }
+
+
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="menu">
+         <div id="logged-in-user">Logged in as: <span id="username-display"></span></div> <button id="logout-button">Logout</button>
+
+        <button class="menu-button" id="playButton">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="1em" height="1em"><path d="M8 5v14l11-7z"/></svg>
+            Play New Level
+        </button>
+         <button class="menu-button" id="accountButton">
+             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="1em" height="1em">
+                 <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+             </svg>
+             Account
+         </button>
+        <button class="menu-button" id="levelCreatorButton">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="1em" height="1em"><path d="M14.06 9.02l.92.92L5.92 18H5v-.92l9.06-9.06zm4.93-4.93l-1.39-1.39c-.2-.2-.45-.29-.71-.29s-.51.1-.7.29l-1.83 1.83 3.17 3.17 1.83-1.83c.39-.39.39-1.02 0-1.41z"/></svg>
+            Level Creator
+        </button>
+        <div id="level-selection">
+            <h3>Levels</h3>
+            <div id="level-tabs">
+                 <button id="myLevelsTab" class="active-tab">My Levels</button>
+                 <button id="officialLevelsTab">Official Levels</button>
+            </div>
+             <p id="no-levels-message">No saved levels yet for this account.</p> <div id="level-list">
+                </div>
+             <div id="official-level-list">
+                 </div>
+        </div>
+    </div>
+
+    <div id="account-form">
+        <h3>Account</h3>
+        <input type="text" id="username" placeholder="Username">
+        <input type="password" id="password" placeholder="Password">
+        <button id="registerButton">Register</button>
+        <button id="loginButton">Login</button>
+    </div>
+
+    <div id="saveLevelForm">
+        <h3>Save Level</h3>
+        <input type="text" id="levelNameInput" placeholder="Level Name">
+
+        <div class="save-type-selection" id="saveTypeSelection">
+             <label>Save As:</label>
+             <div>
+                 <input type="radio" id="saveAsMy" name="saveType" value="my" checked>
+                 <label for="saveAsMy">My Level</label>
+             </div>
+             <div>
+                 <input type="radio" id="saveAsOfficial" name="saveType" value="official">
+                 <label for="saveAsOfficial">Official Level</label>
+             </div>
+        </div>
+
+        <div class="form-buttons">
+            <button id="confirmSaveButton">Save</button>
+            <button id="cancelSaveButton">Cancel</button>
+        </div>
+    </div>
+
+
+    <div id="message-display"></div> <canvas id="gameCanvas"></canvas>
+    <div id="countdown"></div> <div id="timer">0.000</div> <div id="color-menu">
+        <div class="color-square" data-color="white" style="background-color: white;"></div>
+        <div class="color-square" data-color="blue" style="background-color: blue;"></div>
+        <div class="color-square" data-color="green" style="background-color: green;"></div>
+        <div class="color-square" data-color="red" style="background-color: red;"></div>
+        <div class="color-square" data-color="black">
+            <svg viewBox="0 0 2 2" xmlns="http://www.w3.org/2000/svg">
+                <rect x="0" y="0" width="1" height="1" fill="white"/>
+                <rect x="1" y="0" width="1" height="1" fill="black"/>
+                <rect x="0" y="1" width="1" height="1" fill="black"/>
+                <rect x="1" y="1" width="1" height="1" fill="white"/>
+            </svg>
+        </div>
+    </div>
+
+    <div id="creator-controls">
+        <button id="saveLevelButton">Save Level</button>
+    </div>
+
+    <div id="segment-edit-controls">
+        <button class="save-segment-button" id="saveSegmentButton">
+             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="1em" height="1em">
+                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+            </svg>
+        </button>
+        <button class="delete-segment-button" id="deleteSegmentButton">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="1em" height="1em">
+                <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+            </svg>
+        </button>
+    </div>
+
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const menuDiv = document.getElementById('menu');
+        const playButton = document.getElementById('playButton');
+        const accountButton = document.getElementById('accountButton'); // New account button
+        const levelCreatorButton = document.getElementById('levelCreatorButton');
+        const colorMenuDiv = document.getElementById('color-menu');
+        // Update to select all color squares, including the new black one
+        const colorSquares = colorMenuDiv.querySelectorAll('.color-square');
+        const creatorControlsDiv = document.getElementById('creator-controls');
+        const saveLevelButton = document.getElementById('saveLevelButton');
+        const levelListDiv = document.getElementById('level-list');
+        const officialLevelListDiv = document.getElementById('official-level-list'); // New element for official levels list
+        const segmentEditControlsDiv = document.getElementById('segment-edit-controls');
+        const saveSegmentButton = document.getElementById('saveSegmentButton');
+        const deleteSegmentButton = document.getElementById('deleteSegmentButton');
+        const accountFormDiv = document.getElementById('account-form'); // New account form div
+        const usernameInput = document.getElementById('username');
+        const passwordInput = document.getElementById('password');
+        const registerButton = document.getElementById('registerButton');
+        const loginButton = document.getElementById('loginButton');
+        const messageDisplay = document.getElementById('message-display'); // New message display element
+        const loggedInUserDisplay = document.getElementById('logged-in-user'); // Display for logged-in user
+        const usernameDisplay = document.getElementById('username-display'); // Span for username
+        const logoutButton = document.getElementById('logout-button'); // Logout button
+        const noLevelsMessage = document.getElementById('no-levels-message'); // New element for no levels message
+        const myLevelsTab = document.getElementById('myLevelsTab'); // Tab button for My Levels
+        const officialLevelsTab = document.getElementById('officialLevelsTab'); // Tab button for Official Levels
+        const countdownElement = document.getElementById('countdown'); // New element for countdown display
+        const timerElement = document.getElementById('timer'); // New element for timer display
+
+        // New Save Level Form Elements
+        const saveLevelForm = document.getElementById('saveLevelForm');
+        const levelNameInput = document.getElementById('levelNameInput');
+        const saveTypeSelection = document.getElementById('saveTypeSelection'); // Container for radio buttons
+        const saveAsMyRadio = document.getElementById('saveAsMy');
+        const saveAsOfficialRadio = document.getElementById('saveAsOfficial');
+        const confirmSaveButton = document.getElementById('confirmSaveButton');
+        const cancelSaveButton = document.getElementById('cancelSaveButton');
+
+
+        // --- Game State Management ---
+        let gameState = 'menu'; // 'menu', 'account', 'countdown', 'playing', 'level_creating', 'saving_level', 'level_complete'
+        let selectedColor = 'white';
+        let isWhitePlacementActive = true; // New state: true means white color is for placement
+        let loggedInUser = null; // Store the currently logged-in user
+        let activeLevelList = 'my'; // 'my' or 'official' - determines which list is shown
+
+        // --- Countdown State ---
+        let countdownValue = 3;
+        let countdownStartTime = 0;
+        const countdownDuration = 500; // Duration for each number in milliseconds
+
+        // --- Timer State ---
+        let gameStartTime = 0; // Timestamp when the game starts (after countdown)
+        let elapsedGameTime = 0; // Time elapsed since game start in milliseconds
+
+
+        // --- Camera Properties (Used by both playing and level creator) ---
+        let cameraX = 0;
+        let cameraY = 0;
+        let zoomLevel = 1.0;
+
+        const gameZoomLevel = 1.0; // Fixed zoom level for the game view
+        const creatorMinZoom = 0.1; // Minimum zoom level for creator
+        const creatorMaxZoom = 5.0; // Maximum zoom level for creator
+
+
+        // --- Dragging State for Level Creator ---
+        let isDragging = false;
+        let lastMouseX = 0; // Last mouse screen X for camera drag delta
+        let lastMouseY = 0; // Last mouse screen Y for camera drag delta
+        let initialMouseX = 0; // Initial mouse screen X on mousedown
+        let initialMouseY = 0; // Initial mouse screen Y on mousedown
+        let draggedNode = null; // Node being dragged
+        let dragOffsetX = 0; // Offset from node center to mouse click
+        let dragOffsetY = 0; // Offset from node center to mouse click
+        const clickThreshold = 5; // Distance in screen pixels to consider a click vs drag
+
+
+        // --- Level Creator Data ---
+        // These arrays store the level layout and are used for both creator display and game physics
+        let nodes = []; // Stores placed nodes { x: worldX, y: worldY, color: string }
+        let segments = []; // Stores placed segments { node1: node, node2: node, color: string }
+        // Finish lines now store node references directly
+        let finishLines = []; // Stores finish line rectangles { node1: node, node2: node }
+        let activeWhiteNode = null; // Node waiting for a second click to form a white segment
+        let activeBlackNode = null; // Node waiting for a second click to form a black rectangle
+        let selectedSegment = null; // The currently selected segment for editing
+        let selectedFinishLine = null; // The currently selected finish line for editing
+
+
+        // Function to create the initial checkered square (Removed - start with empty creator)
+        // function createInitialCheckeredSquare() { ... }
+
+
+        // --- Game Physics Properties ---
+        // Triangle properties (position is now in WORLD coordinates)
+        const triangleSize = 30; // Still screen pixels for drawing size, but relative to world position
+        let triangleX = 0; // World x-coordinate
+        let triangleY = 0; // World y-coordinate
+        let triangleAngle = 0; // in radians
+
+        // Changed from const to let
+        let vx = 0; // velocity x (world units per frame)
+        let vy = 0; // velocity y (world units per frame)
+        let vAngular = 0; // angular velocity (radians per frame)
+
+        const thrust = 0.085; // world units per frame per frame (acceleration)
+        const dragFactor = 0.97; // linear drag multiplier
+
+        const rotationalAcceleration = 0.003; // radians per frame per frame (angular acceleration)
+        const angularDragFactor = 0.94; // angular drag multiplier
+
+        const maxSpeed = 10; // Max linear speed (world units per frame)
+        const maxAngularSpeed = 0.15; // Max angular speed (radians per frame)
+
+        // --- Collision Properties ---
+        const collisionBuffer = 5; // Extra distance for collision detection (world units)
+        const finishLineWidth = 40; // Fixed width for the checkered finish line rectangle (world units)
+
+
+        // --- Canvas & Resize ---
+        function setCanvasSize() {
+            const size = Math.min(window.innerWidth, window.innerHeight);
+            canvas.width = size * 0.8;
+            canvas.height = size * 1.2;
+
+             if (gameState === 'playing' || gameState === 'menu' || gameState === 'countdown' || gameState === 'level_complete') {
+                 triangleX = 0;
+                 triangleY = 0;
+                 triangleAngle = 0;
+                 vx = 0;
+                 vy = 0;
+                 vAngular = 0;
+            }
+        }
+
+        window.onload = () => {
+            setCanvasSize();
+            gameLoop(); // Start the game loop
+            updateSelectedColorUI(); // Set initial white square state
+            updateAccountUI(); // Update account related UI on load
+            listLevels(activeLevelList); // List levels for the initially active tab
+        };
+        window.addEventListener('resize', setCanvasSize);
+
+        // --- Key States ---
+        const keys = {};
+
+        window.addEventListener('keydown', (e) => {
+            if (gameState === 'playing') { // Only process keys if playing
+                keys[e.key.toLowerCase()] = true;
+            }
+        });
+
+        window.addEventListener('keyup', (e) => {
+            if (gameState === 'playing') { // Only process keys if playing
+                keys[e.key.toLowerCase()] = false;
+            }
+        });
+
+        // --- Drawing Functions ---
+        // Function to draw the triangle (now draws relative to the camera)
+        function drawTriangle() {
+            ctx.save();
+
+            // Convert triangle's world position to screen position using the current camera view
+            const screenX = (triangleX - cameraX) * zoomLevel + canvas.width / 2;
+            const screenY = (triangleY - cameraY) * zoomLevel + canvas.height / 2;
+
+            ctx.translate(screenX, screenY);
+            ctx.rotate(triangleAngle);
+
+            const currentTriangleSize = triangleSize * zoomLevel; // Scale triangle size by zoom
+
+            ctx.beginPath();
+            ctx.moveTo(0, -currentTriangleSize / 2);
+            ctx.lineTo(-currentTriangleSize / 2, currentTriangleSize / 2);
+            ctx.lineTo(currentTriangleSize / 2, currentTriangleSize / 2);
+            ctx.closePath();
+
+            ctx.fillStyle = '#00ff00';
+            ctx.fill();
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 2;
+
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        const gridCellSize = 40;
+        const gridLineColor = '#444';
+        const gridLineWidth = 1;
+
+        function drawGrid() {
+            ctx.strokeStyle = gridLineColor;
+            ctx.lineWidth = gridLineWidth;
+
+            const canvasLeftWorld = cameraX - (canvas.width / 2) / zoomLevel;
+            const canvasRightWorld = cameraX + (canvas.width / 2) / zoomLevel;
+            const canvasTopWorld = cameraY - (canvas.height / 2) / zoomLevel;
+            const canvasBottomWorld = cameraY + (canvas.height / 2) / zoomLevel;
+
+            const startX = Math.floor(canvasLeftWorld / gridCellSize) * gridCellSize;
+            const startY = Math.floor(canvasTopWorld / gridCellSize) * gridCellSize;
+
+            for (let wx = startX; wx < canvasRightWorld + gridCellSize; wx += gridCellSize) {
+                const sx = (wx - cameraX) * zoomLevel + canvas.width / 2;
+                if (sx > -100 && sx < canvas.width + 100) {
+                   ctx.beginPath();
+                   ctx.moveTo(sx, 0);
+                   ctx.lineTo(sx, canvas.height);
+                   ctx.stroke();
+                }
+            }
+
+            for (let wy = startY; wy < canvasBottomWorld + gridCellSize; wy += gridCellSize) {
+                const sy = (wy - cameraY) * zoomLevel + canvas.height / 2;
+                 if (sy > -100 && sy < canvas.height + 100) {
+                    ctx.beginPath();
+                    ctx.moveTo(0, sy);
+                    ctx.lineTo(canvas.width, sy);
+                    ctx.stroke();
+                 }
+            }
+        }
+
+        // Function to draw a checkered rectangle based on two corner nodes
+        function drawCheckeredRectangle(node1, node2) {
+             // Calculate rectangle properties from the two corner nodes
+             const centerX = (node1.x + node2.x) / 2;
+             const centerY = (node1.y + node2.y) / 2;
+             const length = distance(node1, node2); // Length between the two nodes
+             const angle = Math.atan2(node2.y - node1.y, node2.x - node1.x); // Angle of the segment
+
+
+             ctx.save();
+
+             // Convert world coordinates of the rectangle center to screen coordinates
+             const screenX = (centerX - cameraX) * zoomLevel + canvas.width / 2;
+             const screenY = (centerY - cameraY) * zoomLevel + canvas.height / 2;
+
+             ctx.translate(screenX, screenY);
+             ctx.rotate(angle);
+
+             // Scale width and height by zoom level for drawing
+             const screenLength = length * zoomLevel;
+             const screenWidth = finishLineWidth * zoomLevel; // Use the fixed finish line width
+
+             const squareSize = 20 * zoomLevel; // Size of individual squares in screen units
+
+             // Adjust start position to be centered
+             const startX = -screenLength / 2;
+             const startY = -screenWidth / 2;
+
+             // Calculate number of squares based on screen dimensions and scaled square size
+             const numSquaresX = Math.ceil(screenLength / squareSize);
+             const numSquaresY = Math.ceil(screenWidth / squareSize);
+
+
+             for (let i = 0; i < numSquaresX; i++) {
+                 for (let j = 0; j < numSquaresY; j++) {
+                     // Determine color based on position
+                     const isWhite = (i + j) % 2 === 0;
+                     ctx.fillStyle = isWhite ? 'white' : 'black';
+
+                     // Calculate square position relative to the rectangle's center
+                     const squareX = startX + i * squareSize;
+                     const squareY = startY + j * squareSize;
+
+                     // Draw the square
+                     ctx.fillRect(squareX, squareY, squareSize, squareSize);
+                 }
+             }
+
+             ctx.restore();
+        }
+
+        // --- Drawing Placed Level Objects ---
+        const nodeRadius = 5; // Radius of placed nodes in screen pixels
+        const segmentLineWidth = 3; // Line width of segments in screen pixels
+
+        function drawPlacedObjects() {
+            // Draw segments first
+            segments.forEach(segment => {
+                ctx.strokeStyle = segment.color;
+                ctx.lineWidth = segmentLineWidth;
+
+                // Highlight selected segment
+                if (segment === selectedSegment) {
+                    ctx.strokeStyle = 'gold'; // Highlight color
+                    ctx.lineWidth = segmentLineWidth + 2; // Make it a bit thicker
+                }
+
+                // Convert world coordinates of segment endpoints to screen coordinates
+                const screenX1 = (segment.node1.x - cameraX) * zoomLevel + canvas.width / 2;
+                const screenY1 = (segment.node1.y - cameraY) * zoomLevel + canvas.height / 2;
+                const screenX2 = (segment.node2.x - cameraX) * zoomLevel + canvas.width / 2;
+                const screenY2 = (segment.node2.y - cameraY) * zoomLevel + canvas.height / 2;
+
+                ctx.beginPath();
+                ctx.moveTo(screenX1, screenY1);
+                ctx.lineTo(screenX2, screenY2);
+                ctx.stroke();
+            });
+
+            // Draw finish lines (checkered rectangles)
+            finishLines.forEach(finishLine => {
+                 // Highlight selected finish line
+                if (finishLine === selectedFinishLine) {
+                    ctx.save();
+                    ctx.strokeStyle = 'gold'; // Highlight color
+                    ctx.lineWidth = segmentLineWidth + 2; // Make it a bit thicker
+
+                    // Draw a bounding box around the finish line for selection feedback
+                    const centerX = (finishLine.node1.x + finishLine.node2.x) / 2;
+                    const centerY = (finishLine.node1.y + finishLine.node2.y) / 2;
+                    const length = distance(finishLine.node1, finishLine.node2);
+                    const angle = Math.atan2(finishLine.node2.y - finishLine.node1.y, finishLine.node2.x - finishLine.node1.x);
+
+                    const screenX = (centerX - cameraX) * zoomLevel + canvas.width / 2;
+                    const screenY = (centerY - cameraY) * zoomLevel + canvas.height / 2;
+                    const screenLength = length * zoomLevel;
+                    const screenWidth = finishLineWidth * zoomLevel;
+
+                    ctx.translate(screenX, screenY);
+                    ctx.rotate(angle);
+
+                    ctx.strokeRect(-screenLength / 2, -screenWidth / 2, screenLength, screenWidth);
+                    ctx.restore();
+                }
+
+                 // Draw the checkered pattern
+                 drawCheckeredRectangle(finishLine.node1, finishLine.node2);
+            });
+
+
+            // Draw nodes only in level creator mode
+            if (gameState === 'level_creating') {
+                nodes.forEach(node => {
+                     ctx.fillStyle = node.color;
+
+                    // Highlight nodes connected to the selected segment or the dragged node
+                    if (selectedSegment && (node === selectedSegment.node1 || node === selectedSegment.node2) || node === draggedNode ||
+                        selectedFinishLine && (node === selectedFinishLine.node1 || node === selectedFinishLine.node2)) {
+                         ctx.fillStyle = 'gold'; // Highlight color for connected/dragged/selected nodes
+                    }
+
+
+                    // Convert world coordinates of node to screen coordinates
+                    const screenX = (node.x - cameraX) * zoomLevel + canvas.width / 2;
+                    const screenY = (node.y - cameraY) * zoomLevel + canvas.height / 2;
+                    const currentRadius = nodeRadius * zoomLevel; // Scale radius by zoom
+
+                     ctx.beginPath();
+                     ctx.arc(screenX, screenY, currentRadius, 0, Math.PI * 2);
+                     ctx.fill();
+                });
+
+                 // Draw the active white node if it exists (visual feedback for segment drawing)
+                 if (activeWhiteNode) {
+                     ctx.fillStyle = 'rgba(255, 255, 255, 0.5)'; // Semi-transparent white
+
+                     const screenX = (activeWhiteNode.x - cameraX) * zoomLevel + canvas.width / 2;
+                     const screenY = (activeWhiteNode.y - cameraY) * zoomLevel + canvas.height / 2;
+                     const currentRadius = nodeRadius * zoomLevel;
+
+                     ctx.beginPath();
+                     ctx.arc(screenX, screenY, currentRadius, 0, Math.PI * 2);
+                     ctx.fill();
+                 }
+
+                 // Draw the active black node if it exists (visual feedback for rectangle drawing)
+                  if (activeBlackNode) {
+                      ctx.fillStyle = 'rgba(0, 0, 0, 0.5)'; // Semi-transparent black
+
+                      const screenX = (activeBlackNode.x - cameraX) * zoomLevel + canvas.width / 2;
+                      const screenY = (activeBlackNode.y - cameraY) * zoomLevel + canvas.height / 2;
+                      const currentRadius = nodeRadius * zoomLevel;
+
+                      ctx.beginPath();
+                      ctx.arc(screenX, screenY, currentRadius, 0, Math.PI * 2);
+                      ctx.fill();
+                  }
+            }
+        }
+
+
+        // --- Collision Detection ---
+
+        // Helper function: Calculate distance between two points
+        function distance(p1, p2) {
+            const dx = p2.x - p1.x;
+            const dy = p2.y - p1.y;
+            return Math.sqrt(dx * dx + dy * dy);
+        }
+
+        // Helper function: Calculate the shortest distance from a point to a line segment
+        // Adapted from https://stackoverflow.com/questions/849211/shortest-distance-between-a-point and a line-segment
+        function pointToSegmentDistance(px, py, x1, y1, x2, y2) {
+            const lineLenSq = (x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1);
+            if (lineLenSq === 0) return distance({x: px, y: py}, {x: x1, y: y1}); // Segment is a point
+
+            const t = ((px - x1) * (x2 - x1) + (py - y1) * (y2 - y1)) / lineLenSq;
+
+            // Clamp t to the range [0, 1] to find the closest point on the segment
+            const clampedT = Math.max(0, Math.min(1, t));
+
+            const closestX = x1 + clampedT * (x2 - x1);
+            const closestY = y1 + clampedT * (y2 - y1);
+            return distance({x: px, y: py}, {x: closestX, y: closestY});
+        }
+
+         // Helper function to find the closest white segment to a point within collision range
+         function findClosestWhiteSegment(px, py) {
+             let closestSegment = null;
+             let minDistance = Infinity;
+             const triangleRadiusWorld = triangleSize / 2;
+
+             for (const segment of segments) {
+                 if (segment.color === 'white') {
+                     const dist = pointToSegmentDistance(px, py, segment.node1.x, segment.node1.y, segment.node2.x, segment.node2.y);
+                     // Check if the distance is within collision range and is the minimum so far
+                     if (dist < triangleRadiusWorld + collisionBuffer && dist < minDistance) {
+                         minDistance = dist;
+                         closestSegment = segment;
+                     }
+                 }
+             }
+             return closestSegment;
+         }
+
+         // Helper function to find a node near given world coordinates within a tolerance
+         function findNodeNear(worldX, worldY, tolerance) {
+             for (const node of nodes) {
+                 const dist = distance({x: worldX, y: worldY}, {x: node.x, y: node.y});
+                 if (dist < tolerance) {
+                     return node;
+                 }
+             }
+             return null;
+         }
+
+        // Helper function to check if a point is inside a checkered rectangle
+        function isPointInsideCheckeredRectangle(px, py, node1, node2) {
+            const rectCenterX = (node1.x + node2.x) / 2;
+            const rectCenterY = (node1.y + node2.y) / 2;
+            const rectLength = distance(node1, node2);
+            const rectAngle = Math.atan2(node2.y - node1.y, node2.x - node1.x);
+            const rectWidth = finishLineWidth;
+
+            // Translate and rotate the point to the rectangle's local coordinate system
+            const translatedX = px - rectCenterX;
+            const translatedY = py - rectCenterY;
+
+            const rotatedX = translatedX * Math.cos(-rectAngle) - translatedY * Math.sin(-rectAngle);
+            const rotatedY = translatedX * Math.sin(-rectAngle) + translatedY * Math.cos(-rectAngle);
+
+            // Check if the rotated point is within the bounds of the rectangle in its local system
+            const halfLength = rectLength / 2;
+            const halfWidth = rectWidth / 2;
+
+            return rotatedX >= -halfLength && rotatedX <= halfLength &&
+                   rotatedY >= -halfWidth && rotatedY <= halfWidth;
+        }
+
+
+        // Check for collisions between the triangle and placed obstacles at a given position
+        function checkCollisions(checkX, checkY) {
+            const triangleRadiusWorld = triangleSize / 2; // Use half the triangle size in world units
+
+            // Check collision with white segments
+            for (const segment of segments) {
+                if (segment.color === 'white') { // Only check white segments
+                     const dist = pointToSegmentDistance(
+                         checkX, checkY, // Use the position being checked
+                         segment.node1.x, segment.node1.y,
+                         segment.node2.x, segment.node2.y
+                     );
+
+                     if (dist < triangleRadiusWorld + collisionBuffer) {
+                         return true; // Collision detected with a white segment
+                     }
+                }
+            }
+
+            // Check collision with finish lines (checkered rectangles)
+            for (const finishLine of finishLines) {
+                 if (isPointInsideCheckeredRectangle(checkX, checkY, finishLine.node1, finishLine.node2)) {
+                      // Collision with a finish line - this should trigger level completion, not stop movement
+                      // For now, just log it. We'll add win condition later.
+                      console.log("Collision with Finish Line!");
+                      // Return false here so it doesn't stop movement like a wall
+                      // In a real game, this would trigger a win state.
+                      // For now, it's just a visual element and potential win trigger.
+                 }
+            }
+
+
+            // Optional: Check collision with nodes (if nodes themselves should be obstacles)
+            // for (const node of nodes) {
+            //     if (node.color === 'white') { // Only check white nodes
+            //          const dist = distance({x: checkX, y: checkY}, {x: node.x, y: node.y}); // Use the position being checked
+            //          if (dist < triangleRadiusWorld + nodeRadius * zoomLevel + collisionBuffer) { // nodeRadius needs to be world units for this check
+            //              return true; // Collision detected with a white node
+            //          }
+            //     }
+            // }
+
+            return false; // No collision detected with walls
+        }
+
+
+        // --- Physics Update Function ---
+        function updatePhysics() {
+             // console.log("updatePhysics called"); // Debugging line - removed for cleaner console
+
+            // Calculate potential new velocities based on thrust and current drag
+            let potentialVx = vx;
+            let potentialVy = vy;
+
+            // Apply constant forward thrust unless A and D are pressed simultaneously
+            if (!(keys['a'] && keys['d'])) {
+                 // console.log("Applying thrust"); // Debugging line - removed for cleaner console
+                potentialVx += thrust * Math.cos(triangleAngle - Math.PI / 2); // Apply thrust in the direction the triangle is pointing
+                potentialVy += thrust * Math.sin(triangleAngle - Math.PI / 2);
+            }
+
+            // Apply drag to potential velocities
+            potentialVx *= dragFactor;
+            potentialVy *= dragFactor;
+
+            // Apply rotation based on key presses
+            if (keys['a']) {
+                vAngular -= rotationalAcceleration;
+            }
+            if (keys['d']) {
+                vAngular += rotationalAcceleration;
+            }
+
+            // Apply angular drag
+            vAngular *= angularDragFactor;
+
+
+            // Limit linear speed
+            const speed = Math.sqrt(potentialVx * potentialVx + potentialVy * potentialVy);
+            if (speed > maxSpeed) {
+                potentialVx = (potentialVx / speed) * maxSpeed;
+                potentialVy = (potentialVy / speed) * maxSpeed;
+            }
+             // Limit angular speed
+             if (Math.abs(vAngular) > maxAngularSpeed) {
+                 vAngular = Math.sign(vAngular) * maxAngularSpeed;
+             }
+
+            // Calculate potential next position
+            const nextTriangleX = triangleX + potentialVx;
+            const nextTriangleY = triangleY + potentialVy;
+
+            // Check for collisions at the potential next position
+            const collidingSegment = findClosestWhiteSegment(nextTriangleX, nextTriangleY);
+
+            let finalVx = potentialVx;
+            let finalVy = potentialVy;
+
+            if (collidingSegment) {
+                // Collision detected with a white segment - adjust velocity to slide along the wall
+
+                // Calculate the segment vector
+                const segX = collidingSegment.node2.x - collidingSegment.node1.x;
+                const segY = collidingSegment.node2.y - collidingSegment.node1.y;
+
+                const segLenSq = segX * segX + segY * segY;
+
+                if (segLenSq > 0) { // Avoid division by zero for zero-length segments
+                    // Calculate the segment direction vector (normalized)
+                    const segLen = Math.sqrt(segLenSq);
+                    const segDirX = segX / segLen;
+                    const segDirY = segY / segLen;
+
+                    // Project the potential velocity vector onto the segment direction vector
+                    // This gives the component of velocity parallel to the wall
+                    const velocityParallelComponent = potentialVx * segDirX + potentialVy * segDirY;
+
+                    // Set the final velocity to be only the parallel component
+                    finalVx = velocityParallelComponent * segDirX;
+                    finalVy = velocityParallelComponent * segDirY;
+
+                     // Optional: Adjust position slightly to push it out of the wall if it got stuck inside
+                     // This is a simple fix; more advanced physics would handle penetration depth
+                     const currentDist = pointToSegmentDistance(triangleX, triangleY, collidingSegment.node1.x, collidingSegment.node1.y, collidingSegment.node2.x, collidingSegment.node2.y);
+                     const triangleRadiusWorld = triangleSize / 2;
+                     const penetrationDepth = (triangleRadiusWorld + collisionBuffer) - currentDist;
+
+                     if (penetrationDepth > 0) {
+                          // Calculate the wall normal vector (perpendicular to segment)
+                          let normalX = -segDirY;
+                          let normalY = segDirX;
+
+                          // Find the closest point on the segment to the triangle's current position
+                           const t = ((triangleX - collidingSegment.node1.x) * (collidingSegment.node2.x - collidingSegment.node1.x) + (triangleY - collidingSegment.node1.y) * (collidingSegment.node2.y - collidingSegment.node2.y)) / segLenSq;
+                           const clampedT = Math.max(0, Math.min(1, t));
+                           const closestPointX = collidingSegment.node1.x + clampedT * (collidingSegment.node2.x - collidingSegment.node1.x);
+                           const closestPointY = collidingSegment.node1.y + clampedT * (collidingSegment.node2.y - collidingSegment.node2.y);
+
+                           const triangleToSegmentX = closestPointX - triangleX;
+                           const triangleToSegmentY = closestPointY - triangleY;
+
+                           // Ensure the normal points away from the triangle
+                           if (normalX * triangleToSegmentX + normalY * triangleToSegmentY < 0) {
+                                normalX = -normalX;
+                                normalY = -normalY;
+                           }
+
+                          // Adjust the triangle's position to resolve penetration
+                          triangleX -= normalX * penetrationDepth;
+                          triangleY -= normalY * penetrationDepth;
+                     }
+
+
+                } else {
+                    // If segment is a point, just stop linear movement
+                    finalVx = 0;
+                    finalVy = 0;
+                }
+
+            }
+
+            // Update the global velocities and position with the calculated/corrected values
+            vx = finalVx;
+            vy = finalVy;
+            triangleX += vx; // Update position based on final velocity
+            triangleY += vy;
+
+
+            // Update angle regardless of linear collision
+            triangleAngle += vAngular;
+
+            // Keep angle within 0 to 2*PI
+             if (triangleAngle > Math.PI * 2) {
+                 triangleAngle -= Math.PI * 2;
+             }
+             if (triangleAngle < 0) {
+                 triangleAngle += Math.PI * 2;
+             }
+             // console.log("Triangle pos:", triangleX, triangleY, "vel:", vx, vy); // Debugging line - removed for cleaner console
+        }
+
+
+        // --- Game Loop ---
+        function gameLoop() {
+            ctx.clearRect(0, 0, canvas.width, ctx.canvas.height);
+
+            if (gameState === 'playing') {
+                updatePhysics(); // Update triangle's physics and position (handles collisions)
+
+                // Camera tracks the triangle in playing mode
+                cameraX = triangleX;
+                cameraY = triangleY;
+                zoomLevel = gameZoomLevel; // Use game zoom level
+
+                // Update and display timer
+                elapsedGameTime = Date.now() - gameStartTime;
+                timerElement.textContent = (elapsedGameTime / 1000).toFixed(3); // Display in seconds with milliseconds
+
+                // Check for collision with finish lines during playing
+                 for (const finishLine of finishLines) {
+                     if (isPointInsideCheckeredRectangle(triangleX, triangleY, finishLine.node1, finishLine.node2)) {
+                         // Collision with a finish line - WIN CONDITION!
+                         console.log("Reached Finish Line! Level Complete!");
+                         displayMessage("Level Complete! Time: " + timerElement.textContent, false);
+
+                         // Stop the game and transition to level_complete state
+                         gameState = 'level_complete';
+
+                         // Color the timer yellow
+                         timerElement.style.color = 'gold';
+
+                         // Ensure timer is visible
+                         timerElement.style.display = 'block';
+
+                         // Physics updates will stop in the next frame due to gameState change.
+                         // User will use Space or Q to proceed.
+
+                         // Do NOT return here. Let the rest of the drawing happen for this frame.
+                     }
+                 }
+
+
+                // Draw the triangle (now uses camera coords)
+                drawTriangle();
+
+                // Draw placed objects in game mode (as the level layout)
+                drawPlacedObjects(); // This will now draw both nodes and segments in playing state
+
+
+            } else if (gameState === 'level_creating') {
+                 // Use creator camera/zoom set by mouse events
+                 // cameraX, cameraY, zoomLevel are already updated by listeners
+
+                 drawGrid(); // Draw the grid with the creator camera
+                 drawPlacedObjects(); // This will now draw both nodes and segments in creator state
+                 drawTriangle(); // Draw the triangle (at its world position)
+
+            } else if (gameState === 'countdown') {
+                 // Draw the level objects and triangle during countdown
+                 drawPlacedObjects();
+                 drawTriangle();
+
+                 // Update and display countdown number
+                 const elapsed = Date.now() - countdownStartTime;
+                 countdownValue = 3 - Math.floor(elapsed / countdownDuration);
+
+                 if (countdownValue > 0) {
+                      countdownElement.textContent = countdownValue;
+                      countdownElement.style.display = 'block';
+                 } else {
+                      countdownElement.style.display = 'none';
+                      // Transition to playing state after countdown
+                      gameState = 'playing';
+                      gameStartTime = Date.now(); // Start the timer when countdown finishes
+                      timerElement.style.display = 'block'; // Show the timer
+                      console.log("Countdown finished. Starting game and timer.");
+                 }
+            } else if (gameState === 'level_complete') {
+                // In this state, just draw the current scene (level objects, triangle, timer)
+                // Physics updates are skipped.
+                drawPlacedObjects();
+                drawTriangle();
+                // Timer is already visible and colored yellow
+            }
+            // If gameState is 'menu', 'account', or 'saving_level', only clearing happens (menus/forms are HTML/CSS)
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        // --- Message Display Function ---
+        function displayMessage(message, isError = false) {
+             messageDisplay.textContent = message;
+             messageDisplay.classList.remove('error'); // Remove error class first
+             if (isError) {
+                  messageDisplay.classList.add('error'); // Add error class if it's an error
+             }
+             messageDisplay.style.display = 'block'; // Show the message
+
+             // Hide the message after a few seconds
+             setTimeout(() => {
+                  messageDisplay.style.display = 'none';
+             }, 3000); // Hide after 3 seconds
+        }
+
+
+        // --- UI Control: Color Menu ---
+        function updateSelectedColorUI() {
+            colorSquares.forEach(square => {
+                if (square.dataset.color === selectedColor) {
+                    square.classList.add('selected-color');
+                } else {
+                    square.classList.remove('selected-color');
+                }
+            });
+
+             // Manually update the white square's class based on isWhitePlacementActive
+             const whiteSquare = document.querySelector('.color-square[data-color="white"]');
+             if (whiteSquare) {
+                  if (selectedColor === 'white' && isWhitePlacementActive) {
+                       whiteSquare.classList.add('selected-color');
+                  } else if (selectedColor === 'white' && !isWhitePlacementActive) {
+                       whiteSquare.classList.remove('selected-color'); // Remove outline when white is selected but not in placement mode
+                  }
+             }
+              // Manually update the black square's class based on selectedColor and activeBlackNode state
+              const blackSquare = document.querySelector('.color-square[data-color="black"]');
+              if (blackSquare) {
+                   if (selectedColor === 'black' && activeBlackNode !== null) {
+                        blackSquare.classList.add('selected-color'); // Highlight when a black node is selected for rectangle creation
+                   } else if (selectedColor === 'black' && activeBlackNode === null) {
+                        blackSquare.classList.add('selected-color'); // Highlight when black is selected but no node yet
+                   } else {
+                        blackSquare.classList.remove('selected-color'); // Remove highlight otherwise
+                   }
+              }
+        }
+
+        colorSquares.forEach(square => {
+            square.addEventListener('click', () => {
+                 if (square.dataset.color === 'white') {
+                      // Toggle white placement mode
+                      isWhitePlacementActive = !isWhitePlacementActive;
+                      // If white placement is active, turn off black node selection
+                      if (isWhitePlacementActive) {
+                           activeBlackNode = null;
+                      }
+                      console.log("White placement active:", isWhitePlacementActive);
+                 } else {
+                      // If another color is selected, turn off white placement mode
+                      isWhitePlacementActive = false;
+                 }
+
+                 if (square.dataset.color === 'black') {
+                      // If black is selected, clear active white node
+                      activeWhiteNode = null;
+                      // If black is selected again, maybe clear active black node?
+                      // For now, let's keep the active black node if the color is clicked again.
+                 } else {
+                      // If another color is selected, clear active black node
+                      activeBlackNode = null;
+                 }
+
+
+                selectedColor = square.dataset.color;
+                updateSelectedColorUI();
+                console.log("Selected color:", selectedColor);
+
+                 // Clear any existing segment or node selection
+                 clearSelection(); // Use the new clearSelection function
+            });
+        });
+
+        // Function to clear all selections (segment, finish line, and node) and hide buttons
+        function clearSelection() {
+             selectedSegment = null;
+             selectedFinishLine = null; // Clear selected finish line
+             draggedNode = null;
+             isDragging = false; // Ensure dragging is off
+             segmentEditControlsDiv.style.display = 'none';
+             // Only restore grab cursor if in level_creating state
+             if (gameState === 'level_creating') {
+                canvas.style.cursor = 'grab'; // Restore grab cursor in creator mode
+             } else {
+                 canvas.style.cursor = 'default'; // Default cursor in other states
+             }
+        }
+
+
+        // --- Camera Control & Level Editing Event Listeners ---
+        canvas.addEventListener('mousedown', (e) => { // Start mousedown handler
+            // Handle camera dragging FIRST if in level_creating state
+            if (gameState === 'level_creating') { // Start if (gameState === 'level_creating')
+                 // Check if it's a primary mouse button click (usually left button)
+                if (e.button === 0) { // Start if (e.button === 0)
+                     // Store initial mouse position for click/drag check
+                    initialMouseX = e.clientX;
+                    initialMouseY = e.clientY;
+
+                     // --- Level Editing Click/Drag Logic ---
+                    const canvasRect = canvas.getBoundingClientRect();
+                    const mouseX = e.clientX - canvasRect.left;
+                    const mouseY = e.clientY - canvasRect.top;
+                    const worldX = (mouseX - canvas.width / 2) / zoomLevel + cameraX;
+                    const worldY = (mouseY - canvas.height / 2) / zoomLevel + cameraY;
+
+                    // Tolerance for clicking near a node or segment (scaled by zoom)
+                    const clickTolerance = 10 / zoomLevel; // Use world units for tolerance
+
+                    // Check if clicking near an existing node for selection/dragging/placement
+                    const clickedNode = findNodeNear(worldX, worldY, clickTolerance);
+
+                    if (clickedNode) { // If a node was clicked
+                         clearSelection(); // Clear any previous selection
+                         draggedNode = clickedNode; // Set the node to be dragged
+
+                         // Calculate offset for dragging
+                         dragOffsetX = worldX - draggedNode.x;
+                         dragOffsetY = worldY - draggedNode.y;
+
+                         // isDragging is set in mousemove if threshold is met
+                         canvas.style.cursor = 'grabbing';
+                         e.preventDefault(); // Prevent default behavior like camera drag
+
+                         // Show edit/delete buttons for the node
+                         segmentEditControlsDiv.style.display = 'flex';
+
+                    } else { // If no node was clicked, check for segments or finish lines
+                         // Check if clicking near an existing segment for selection
+                         let clickedSegment = null;
+                         for (const segment of segments) {
+                              const dist = pointToSegmentDistance(worldX, worldY, segment.node1.x, segment.node1.y, segment.node2.x, segment.node2.y);
+                               if (dist < clickTolerance) { // Use the same click tolerance
+                                  clickedSegment = segment;
+                                  break;
+                               }
+                          }
+
+                         // Check if clicking inside an existing finish line for selection
+                          let clickedFinishLine = null;
+                          for (const finishLine of finishLines) {
+                               if (isPointInsideCheckeredRectangle(worldX, worldY, finishLine.node1, finishLine.node2)) {
+                                    clickedFinishLine = finishLine;
+                                    break;
+                               }
+                          }
+
+
+                         if (clickedSegment) { // If a segment was clicked
+                              clearSelection(); // Clear any previous selection
+                              selectedSegment = clickedSegment; // Set the segment as selected
+                              segmentEditControlsDiv.style.display = 'flex'; // Show edit/delete buttons for the segment
+
+                              // No dragging starts immediately for segments, only for nodes
+                               e.preventDefault(); // Prevent camera drag when selecting a segment
+
+                         } else if (clickedFinishLine) { // If a finish line was clicked
+                              clearSelection(); // Clear any previous selection
+                              selectedFinishLine = clickedFinishLine; // Set the finish line as selected
+                              segmentEditControlsDiv.style.display = 'flex'; // Show edit/delete buttons for the finish line
+
+                              // No dragging starts immediately for finish lines, only for nodes
+                               e.preventDefault(); // Prevent camera drag when selecting a finish line
+
+                         } else { // If neither a node, segment, nor finish line was clicked (click on empty space)
+                              // Clear any existing selection
+                              clearSelection();
+
+                              // If the currently selected color is not white (and white placement is off) or not black (and black placement is off),
+                              // this is a potential camera drag.
+                              if ( (selectedColor !== 'white' || !isWhitePlacementActive) && (selectedColor !== 'black' || activeBlackNode === null) ) {
+                                   // Initiate potential camera drag
+                                   lastMouseX = e.clientX; // Store screen coordinates for camera drag delta
+                                   lastMouseY = e.clientY;
+                                   // isDragging is set in mousemove if threshold is met
+                                   canvas.style.cursor = 'grabbing';
+                                   e.preventDefault(); // Prevent default browser drag
+                              } else {
+                                   // White color selected and placement is active, OR black color selected and activeBlackNode is null - potential placement click
+                                   // No drag starts here, waiting for mouseup to confirm click
+                                   e.preventDefault(); // Prevent default browser drag
+                              }
+                         } // End else (neither node, segment, nor finish line clicked)
+                    } // End else (clickedNode)
+                 // Add other mouse button handling here if needed (e.g., right click for delete)
+                } // End if (e.button === 0)
+            } // End if (gameState === 'level_creating')
+        }); // End mousedown handler and addEventListener call
+
+
+        canvas.addEventListener('mousemove', (e) => { // Start mousemove handler
+            if (gameState === 'level_creating') { // Start if (gameState === 'level_creating')
+                 const canvasRect = canvas.getBoundingClientRect();
+                 const mouseX = e.clientX - canvasRect.left;
+                 const mouseY = e.clientY - canvasRect.top;
+                 const worldX = (mouseX - canvas.width / 2) / zoomLevel + cameraX;
+                 const worldY = (mouseY - canvas.height / 2) / zoomLevel + cameraY;
+
+                 // Check if drag threshold is met to start dragging
+                 if (!isDragging) {
+                      const screenMoveDistance = distance({x: e.clientX, y: e.clientY}, {x: initialMouseX, y: initialMouseY});
+                      if (screenMoveDistance > clickThreshold) {
+                           // Threshold met, this is a drag
+                           isDragging = true; // Start dragging
+                           // If a node was clicked initially, draggedNode is already set.
+                           // If no node/segment/finish line was clicked, check if this should be a camera drag.
+                           if (!draggedNode && !selectedSegment && !selectedFinishLine && ( (selectedColor !== 'white' || !isWhitePlacementActive) && (selectedColor !== 'black' || activeBlackNode === null) ) ) {
+                                // It's a camera drag
+                                lastMouseX = e.clientX; // Start camera drag from current mouse position
+                                lastMouseY = e.clientY;
+                           } else if (!draggedNode && !selectedSegment && !selectedFinishLine && ( (selectedColor === 'white' && isWhitePlacementActive) || (selectedColor === 'black' && activeBlackNode !== null) ) ) {
+                                // White color, placement active, empty space drag, OR black color, activeBlackNode set - should not drag camera
+                                // isDragging is true, but no draggedNode, so the camera drag logic below won't run.
+                                // Cursor is already 'grabbing' from mousedown.
+                           } else if (draggedNode) {
+                                // Node drag started in mousedown, continue below
+                           } else if (selectedSegment || selectedFinishLine) {
+                                // Segment or finish line selected in mousedown, no drag starts from them directly
+                           }
+                      } else {
+                           // Not dragging yet, just ignore mousemove for now
+                           return;
+                      }
+                 }
+
+
+                 // Only perform dragging if the left mouse button is held down (e.buttons & 1) AND isDragging is true
+                 if (isDragging && (e.buttons & 1)) {
+                      if (draggedNode) { // If a node is being dragged
+                          // Update the dragged node's position
+                          draggedNode.x = worldX - dragOffsetX;
+                          draggedNode.y = worldY - dragOffsetY;
+
+                          // Snap the dragged node's position to the grid
+                          draggedNode.x = Math.round(draggedNode.x / gridCellSize) * gridCellSize;
+                          draggedNode.y = Math.round(draggedNode.y / gridCellSize) * gridCellSize;
+
+                      } else if (!selectedSegment && !selectedFinishLine && ( (selectedColor !== 'white' || !isWhitePlacementActive) && (selectedColor !== 'black' || activeBlackNode === null) ) ) { // If camera is being dragged
+                          const dx = e.clientX - lastMouseX;
+                          const dy = e.clientY - lastMouseY;
+
+                          cameraX -= dx / zoomLevel;
+                          cameraY -= dy / zoomLevel;
+
+                          lastMouseX = e.clientX;
+                          lastMouseY = e.clientY;
+                      }
+                      // If isDragging is true, but not draggedNode and not camera drag conditions met, do nothing.
+                 }
+
+            } // End if (gameState === 'level_creating')
+        }); // End mousemove handler and addEventListener call
+
+
+        canvas.addEventListener('mouseup', (e) => { // Start mouseup handler
+            if (gameState === 'level_creating') { // Start if (gameState === 'level_creating')
+                const canvasRect = canvas.getBoundingClientRect();
+                const mouseX = e.clientX - canvasRect.left;
+                const mouseY = e.clientY - canvasRect.top;
+                const worldX = (mouseX - canvas.width / 2) / zoomLevel + cameraX;
+                const worldY = (mouseY - canvas.height / 2) / zoomLevel + cameraY;
+
+                // Check if it was a click (not a drag that crossed the threshold)
+                const screenMoveDistance = distance({x: e.clientX, y: e.clientY}, {x: initialMouseX, y: initialMouseY});
+
+                if (!isDragging || screenMoveDistance < clickThreshold) {
+                     // This was a click (not a drag that crossed the threshold)
+                     const clickTolerance = 10 / zoomLevel; // Use world units for tolerance
+
+                     // Check if a node or segment or finish line was clicked (selection/drag started in mousedown)
+                     const clickedNode = findNodeNear(worldX, worldY, clickTolerance);
+                     let clickedSegment = null;
+                     if (!clickedNode) {
+                          for (const segment of segments) {
+                               const dist = pointToSegmentDistance(worldX, worldY, segment.node1.x, segment.node1.y, segment.node2.x, segment.node2.y);
+                               if (dist < clickTolerance) {
+                                   clickedSegment = segment;
+                                   break;
+                               }
+                          }
+                     }
+                      let clickedFinishLine = null;
+                      if (!clickedNode && !clickedSegment) {
+                           for (const finishLine of finishLines) {
+                                if (isPointInsideCheckeredRectangle(worldX, worldY, finishLine.node1, finishLine.node2)) {
+                                     clickedFinishLine = finishLine;
+                                     break;
+                                }
+                           }
+                      }
+
+
+                     // If no node, segment, or finish line was clicked, perform placement based on selectedColor
+                     if (!clickedNode && !clickedSegment && !clickedFinishLine) {
+                          const snappedX = Math.round(worldX / gridCellSize) * gridCellSize; // Snap click pos
+                          const snappedY = Math.round(worldY / gridCellSize) * gridCellSize; // Snap click pos
+
+                          if (selectedColor === 'white' && isWhitePlacementActive) {
+                              // White color selected and placement is active - perform segment placement
+                              if (activeWhiteNode === null) {
+                                  // First click for a white segment
+                                  const newNode = { x: snappedX, y: snappedY, color: 'white' };
+                                  const existingNode = nodes.find(node => node.x === newNode.x && node.y === newNode.y);
+
+                                  if (!existingNode) {
+                                     nodes.push(newNode);
+                                     activeWhiteNode = newNode;
+                                     console.log("White node placed (click):", newNode);
+                                  } else {
+                                      activeWhiteNode = existingNode;
+                                      console.log("Existing white node selected as first point (click):", existingNode);
+                                  }
+                              } else {
+                                  // Second click for a white segment
+                                  const newNode = { x: snappedX, y: snappedY, color: 'white' };
+                                  const existingNode = nodes.find(node => node.x === newNode.x && node.y === newNode.y);
+
+                                  let startNode = activeWhiteNode;
+                                  let endNode = existingNode || newNode;
+
+                                  if (!existingNode) {
+                                      nodes.push(newNode);
+                                  }
+
+                                   const segmentExists = segments.some(seg =>
+                                        (seg.node1 === startNode && seg.node2 === endNode) ||
+                                        (seg.node1 === endNode && seg.node2 === startNode) );
+
+
+                                   if (!segmentExists) {
+                                       const newSegment = { node1: startNode, node2: endNode, color: 'white' };
+                                       segments.push(newSegment);
+                                       console.log("White segment created (click):", newSegment);
+                                   } else {
+                                        console.log("Segment already exists between these nodes (click).");
+                                   }
+
+                                  activeWhiteNode = null; // Segment complete
+                              }
+                          } else if (selectedColor === 'black' && !isWhitePlacementActive) {
+                               // Black color selected and white placement is NOT active - perform black rectangle placement
+                               if (activeBlackNode === null) {
+                                   // First click for a black rectangle
+                                   const newNode = { x: snappedX, y: snappedY, color: 'black' };
+                                   const existingNode = nodes.find(node => node.x === newNode.x && node.y === newNode.y);
+
+                                   if (!existingNode) {
+                                      nodes.push(newNode);
+                                      activeBlackNode = newNode;
+                                      console.log("Black node placed as first corner (click):", newNode);
+                                   } else {
+                                       activeBlackNode = existingNode;
+                                       console.log("Existing black node selected as first corner (click):", existingNode);
+                                   }
+                               } else {
+                                   // Second click for a black rectangle
+                                   const newNode = { x: snappedX, y: snappedY, color: 'black' };
+                                   const existingNode = nodes.find(node => node.x === newNode.x && node.y === newNode.y);
+
+                                   let corner1 = activeBlackNode;
+                                   let corner2 = existingNode || newNode;
+
+                                   // Prevent creating a rectangle with the same node as both corners
+                                   if (corner1 === corner2) {
+                                       displayMessage("Cannot create a rectangle with the same node.", true);
+                                       activeBlackNode = null; // Reset active black node
+                                       updateSelectedColorUI(); // Update UI
+                                       return;
+                                   }
+
+                                   if (!existingNode) {
+                                       nodes.push(newNode);
+                                   }
+
+                                    // Check if a finish line already exists between these two nodes
+                                    const finishLineExists = finishLines.some(fl =>
+                                         (fl.node1 === corner1 && fl.node2 === corner2) ||
+                                         (fl.node1 === corner2 && fl.node2 === corner1) );
+
+
+                                    if (!finishLineExists) {
+                                        // Create a new finish line rectangle
+                                        const newFinishLine = { node1: corner1, node2: corner2 }; // Store node references
+                                        finishLines.push(newFinishLine);
+                                        console.log("Finish line rectangle created (click):", newFinishLine);
+                                    } else {
+                                         console.log("Finish line already exists between these nodes (click).");
+                                    }
+
+                                   activeBlackNode = null; // Rectangle complete
+                                   updateSelectedColorUI(); // Update UI
+                               }
+
+                          } else {
+                              // Any other color selected OR white placement is NOT active AND black is NOT active - place a node
+                              const newNode = { x: snappedX, y: snappedY, color: selectedColor };
+                              const existingNode = nodes.find(node => node.x === newNode.x && node.y === newNode.y);
+
+                              if (!existingNode) {
+                                   nodes.push(newNode);
+                                   console.log("Node placed (click):", newNode);
+                              } else {
+                                   console.log("Node already exists at this location (click).");
+                              }
+                               activeWhiteNode = null; // Clear active white node if placing another color
+                               activeBlackNode = null; // Clear active black node if placing another color
+                               updateSelectedColorUI(); // Update UI
+                          }
+                     } else if (clickedNode) {
+                          // A node was clicked - it's already selected and potentially dragged
+                          console.log("Node clicked (mouseup check)");
+                          // If black color is selected and a black node was clicked, set it as activeBlackNode
+                           if (selectedColor === 'black' && clickedNode.color === 'black') {
+                               activeBlackNode = clickedNode;
+                               console.log("Black node selected as first corner (click):", activeBlackNode);
+                               updateSelectedColorUI(); // Update UI to highlight the selected black node
+                           } else {
+                                // If another color or a non-black node was clicked, clear active black node
+                                activeBlackNode = null;
+                                updateSelectedColorUI(); // Update UI
+                           }
+
+                     } else if (clickedSegment) {
+                          // A segment was clicked - it's already selected
+                          console.log("Segment clicked (mouseup check)");
+                          activeWhiteNode = null; // Clear active white node if selecting a segment
+                          activeBlackNode = null; // Clear active black node if selecting a segment
+                          updateSelectedColorUI(); // Update UI
+                     } else if (clickedFinishLine) {
+                          // A finish line was clicked - it's already selected
+                          console.log("Finish line clicked (mouseup check)");
+                           activeWhiteNode = null; // Clear active white node if selecting a finish line
+                           activeBlackNode = null; // Clear active black node if selecting a finish line
+                           updateSelectedColorUI(); // Update UI
+                     } else {
+                         // Click on empty space, but not in placement mode
+                         console.log("Click on empty space, no placement performed.");
+                           activeWhiteNode = null; // Clear active white node
+                           activeBlackNode = null; // Clear active black node
+                           updateSelectedColorUI(); // Update UI
+                     }
+
+                } else {
+                    // This was a drag operation (crossed the threshold)
+                    if (draggedNode) {
+                         // Node dragging finished. Position is already updated in mousemove.
+                         console.log("Node dragging finished.");
+                    } else if (!selectedSegment && !selectedFinishLine && ( (selectedColor !== 'white' || !isWhitePlacementActive) && (selectedColor !== 'black' || activeBlackNode === null) ) ) {
+                         // Camera dragging finished
+                         console.log("Camera dragging finished.");
+                    } else {
+                         // White color, placement active, drag on empty space, OR black color, activeBlackNode set, drag on empty space - no camera drag occurred
+                         console.log("Drag on empty space in placement mode.");
+                    }
+                }
+
+                isDragging = false; // Reset dragging state
+                draggedNode = null; // Clear dragged node
+                // activeBlackNode is NOT cleared here if it was set by a click, only if dragging started.
+                // It's cleared when changing color or explicitly clearing selection.
+
+                // Restore grab cursor only if still in level_creating state and not dragging a node
+                 if (gameState === 'level_creating' && !draggedNode) {
+                    canvas.style.cursor = 'grab'; // Restore grab cursor in creator mode
+                 } else if (gameState === 'level_creating' && draggedNode) {
+                     // If a node was dragged, cursor was 'grabbing', now it should go back to 'grab' after mouseup
+                      canvas.style.cursor = 'grab';
+                 } else {
+                    canvas.style.cursor = 'default'; // Default cursor in other states
+                 }
+
+
+            } // End if (gameState === 'level_creating')
+        }); // End mouseup handler and addEventListener call
+
+
+        canvas.addEventListener('mouseleave', () => { // Start mouseleave handler
+            if (gameState === 'level_creating' && isDragging) { // Start if (gameState === 'level_creating' && isDragging)
+                isDragging = false;
+                draggedNode = null; // Stop dragging the node
+                 canvas.style.cursor = 'grab'; // Restore grab cursor
+            } // End if (gameState === 'level_creating' && isDragging)
+        }); // End mouseleave handler and addEventListener call
+
+
+        canvas.addEventListener('wheel', (e) => { // Start wheel handler
+            if (gameState === 'level_creating') { // Start if (gameState === 'level_creating')
+                e.preventDefault();
+
+                const zoomFactor = e.deltaY < 0 ? 1.1 : 1 / 1.1;
+
+                const canvasRect = canvas.getBoundingClientRect();
+                const mouseX = e.clientX - canvasRect.left;
+                const mouseY = e.clientY - canvasRect.clientY; // Use clientY for consistency
+                // const mouseY = e.clientY - canvasRect.top; // Original line
+
+                const mouseWorldXBefore = (mouseX - canvas.width / 2) / zoomLevel + cameraX;
+                const mouseWorldYBefore = (mouseY - canvas.height / 2) / zoomLevel + cameraY;
+
+                zoomLevel *= zoomFactor;
+                zoomLevel = Math.max(creatorMinZoom, Math.min(zoomLevel, creatorMaxZoom));
+
+                const mouseWorldXAfter = (mouseX - canvas.width / 2) / zoomLevel + cameraX;
+                const mouseWorldYAfter = (mouseY - canvas.height / 2) / zoomLevel + cameraY;
+
+                cameraX -= (mouseWorldXAfter - mouseWorldXBefore);
+                cameraY -= (mouseWorldYAfter - mouseWorldYBefore);
+            } // End if (gameState === 'level_creating')
+        }); // End wheel handler and addEventListener call
+
+        // --- Level Save/Load Functions ---
+
+        // Renamed the core save logic to handle saving from the form
+        function performSaveLevel(levelName, saveType) {
+             console.log(`Attempting to save level "${levelName}" as "${saveType}" for user:`, loggedInUser);
+
+             const users = JSON.parse(localStorage.getItem('triangleGameUsers') || '{}');
+             const officialLevels = JSON.parse(localStorage.getItem('officialLevels') || '{}');
+
+             // Ensure the logged-in user exists and has a levels property
+             if (!users[loggedInUser]) {
+                  users[loggedInUser] = { password: users[loggedInUser]?.password || '', levels: {} };
+             }
+              if (!users[loggedInUser].levels) {
+                   users[loggedInUser].levels = {};
+              }
+
+             // Prepare level data for saving - store node coordinates instead of references for finish lines
+             const savableFinishLines = finishLines.map(fl => ({
+                  node1: { x: fl.node1.x, y: fl.node1.y, color: fl.node1.color },
+                  node2: { x: fl.node2.x, y: fl.node2.y, color: fl.node2.color }
+                  // Width and angle are calculated on load/draw, not stored
+             }));
+
+             const levelData = {
+                 nodes: nodes,
+                 segments: segments.map(seg => ({ // Also store node coordinates for segments
+                     node1: { x: seg.node1.x, y: seg.node1.y, color: seg.node1.color },
+                     node2: { x: seg.node2.x, y: seg.node2.y, color: seg.node2.color },
+                     color: seg.color
+                 })),
+                 finishLines: savableFinishLines // Include finish lines
+             };
+
+             let saveSuccessful = false;
+
+             if (saveType === 'official' && loggedInUser === 'HamBadem2') {
+                  officialLevels[levelName.trim()] = levelData;
+                  localStorage.setItem('officialLevels', JSON.stringify(officialLevels));
+                  console.log(`Level "${levelName.trim()}" saved as Official Level.`);
+                  displayMessage(`Level "${levelName.trim()}" saved as Official!`);
+                  saveSuccessful = true;
+             } else if (saveType === 'my') {
+                  users[loggedInUser].levels[levelName.trim()] = levelData;
+                  localStorage.setItem('triangleGameUsers', JSON.stringify(users));
+                  console.log(`Level "${levelName.trim()}" saved as My Level for user "${loggedInUser}".`);
+                  displayMessage(`Level "${levelName.trim()}" saved to My Levels!`);
+                  saveSuccessful = true;
+             } else if (saveType === 'official' && loggedInUser !== 'HamBadem2') {
+                 displayMessage("Only HamBadem2 can save official levels.", true);
+                 console.log("Attempted to save official level by non-admin user.");
+             } else {
+                 displayMessage("Invalid save type.", true);
+                 console.log("Invalid save type provided.");
+             }
+
+             // After saving (or attempting to save), refresh the level list
+             if (saveSuccessful) {
+                 listLevels(activeLevelList);
+             }
+        }
+
+
+        function deleteLevel(levelName, type) {
+             if (!loggedInUser) {
+                 displayMessage("Please log in to delete levels.", true);
+                 return;
+             }
+
+             if (type === 'my') {
+                 const users = JSON.parse(localStorage.getItem('triangleGameUsers') || '{}');
+                 // Check if the user exists and has the level
+                 if (users[loggedInUser] && users[loggedInUser].levels && users[loggedInUser].levels[levelName]) {
+                     if (confirm(`Are you sure you want to delete your level "${levelName}"?`)) {
+                         delete users[loggedInUser].levels[levelName];
+                         localStorage.setItem('triangleGameUsers', JSON.stringify(users));
+                         console.log(`Level "${levelName}" deleted for user "${loggedInUser}".`);
+                         displayMessage(`Level "${levelName}" deleted.`);
+                         listLevels(activeLevelList); // Refresh the list
+                     }
+                 } else {
+                     console.warn(`Attempted to delete non-existent level "${levelName}" for user "${loggedInUser}".`);
+                     displayMessage(`Level "${levelName}" not found.`, true);
+                 }
+             } else if (type === 'official') {
+                  // Only HamBadem2 can delete official levels
+                  if (loggedInUser === 'HamBadem2') {
+                      const officialLevels = JSON.parse(localStorage.getItem('officialLevels') || '{}');
+                       if (officialLevels[levelName]) {
+                           if (confirm(`Are you sure you want to delete the official level "${levelName}"?`)) {
+                                delete officialLevels[levelName];
+                                localStorage.setItem('officialLevels', JSON.stringify(officialLevels));
+                                console.log(`Official level "${levelName}" deleted by HamBadem2.`);
+                                displayMessage(`Official level "${levelName}" deleted.`);
+                                listLevels(activeLevelList); // Refresh the list
+                           }
+                       } else {
+                            console.warn(`Attempted to delete non-existent official level "${levelName}".`);
+                            displayMessage(`Official level "${levelName}" not found.`, true);
+                       }
+                  } else {
+                       displayMessage("Only HamBadem2 can delete official levels.", true);
+                  }
+             }
+        }
+
+
+        function loadLevel(levelName, type) {
+             if (!loggedInUser) {
+                 displayMessage("Please log in to load levels.", true);
+                 return;
+             }
+
+            let levelData = null;
+            if (type === 'my') {
+                 const users = JSON.parse(localStorage.getItem('triangleGameUsers') || '{}');
+                 levelData = users[loggedInUser] && users[loggedInUser].levels ? users[loggedInUser].levels[levelName] : null;
+            } else if (type === 'official') {
+                 const officialLevels = JSON.parse(localStorage.getItem('officialLevels') || '{}');
+                 levelData = officialLevels[levelName] || null;
+            }
+
+
+            if (levelData) {
+                // Clear current level data
+                nodes = [];
+                segments = [];
+                finishLines = []; // Clear finish lines
+                activeWhiteNode = null;
+                activeBlackNode = null; // Clear active black node
+                clearSelection(); // Clear any active selection
+                isWhitePlacementActive = true; // Reset white placement state on load
+                updateSelectedColorUI(); // Update UI
+
+
+                // Load new level data only if it exists and is an array
+                if (levelData.nodes && Array.isArray(levelData.nodes)) {
+                    levelData.nodes.forEach(nodeData => {
+                        nodes.push({ ...nodeData });
+                    });
+                } else {
+                    console.warn(`Level "${levelName}" (${type}) for user "${loggedInUser}" has no valid node data.`);
+                    displayMessage(`Error loading level "${levelName}": Invalid node data.`, true);
+                    return; // Stop loading if data is invalid
+                }
+
+                // Load segments data only if it exists and is an array
+                if (levelData.segments && Array.isArray(levelData.segments)) {
+                    levelData.segments.forEach(segmentData => {
+                        // Find the corresponding node objects in the newly created nodes array
+                        const node1 = nodes.find(node => node.x === segmentData.node1.x && node.y === segmentData.node1.y && node.color === segmentData.node1.color);
+                        const node2 = nodes.find(node => node.x === segmentData.node2.x && node.y === segmentData.node2.y && node.color === segmentData.node2.color);
+
+                        if (node1 && node2) {
+                            segments.push({ node1: node1, node2: node2, color: segmentData.color });
+                        } else {
+                            console.error("Failed to find nodes for segment during load.");
+                            displayMessage(`Error loading level "${levelName}": Failed to find segment nodes.`, true);
+                             // Decide how to handle this - maybe clear partially loaded level?
+                             nodes = [];
+                             segments = [];
+                             finishLines = []; // Clear finish lines on error
+                             return; // Stop loading
+                        }
+                    });
+                } else {
+                     console.warn(`Level "${levelName}" (${type}) for user "${loggedInUser}" has no valid segment data.`);
+                     displayMessage(`Error loading level "${levelName}": Invalid segment data.`, true);
+                     return; // Stop loading
+                }
+
+                // Load finish lines data only if it exists and is an array
+                 if (levelData.finishLines && Array.isArray(levelData.finishLines)) {
+                      levelData.finishLines.forEach(finishLineData => {
+                          // Find the corresponding node objects in the newly created nodes array
+                          const node1 = nodes.find(node => node.x === finishLineData.node1.x && node.y === finishLineData.node1.y && node.color === finishLineData.node1.color);
+                          const node2 = nodes.find(node => node.x === finishLineData.node2.x && node.y === finishLineData.node2.y && node.color === finishLineData.node2.color);
+
+                          if (node1 && node2) {
+                              finishLines.push({ node1: node1, node2: node2 }); // Store node references
+                          } else {
+                               console.error("Failed to find nodes for finish line during load.");
+                               displayMessage(`Error loading level "${levelName}": Failed to find finish line nodes.`, true);
+                               // Decide how to handle this - maybe clear partially loaded level?
+                               nodes = [];
+                               segments = [];
+                               finishLines = []; // Clear finish lines on error
+                               return; // Stop loading
+                          }
+                      });
+                 } else {
+                      console.warn(`Level "${levelName}" (${type}) for user "${loggedInUser}" has no valid finish line data.`);
+                      // This is a warning, not an error, as older levels might not have finishLines
+                      // displayMessage(`Warning loading level "${levelName}": Invalid finish line data.`); // Maybe don't show warning for missing optional data
+                 }
+
+
+                console.log(`Level "${levelName}" (${type}) loaded for user "${loggedInUser}".`);
+                displayMessage(`Level "${levelName}" loaded!`);
+
+                // Prepare for game start (reset triangle state)
+                triangleX = 0; // Start game at world origin
+                triangleY = 0; // Start game at world origin
+                triangleAngle = 0;
+                vx = 0;
+                vy = 0;
+                vAngular = 0;
+
+                // Camera tracks triangle in game mode initially
+                cameraX = 0; // Reset camera to origin for game start
+                cameraY = 0; // Reset camera to origin for game start
+                zoomLevel = gameZoomLevel;
+
+                setCanvasSize(); // Ensure canvas size is correct
+                keys['a'] = false;
+                keys['d'] = false;
+                 canvas.style.cursor = 'default';
+
+                // Start the countdown
+                startCountdown();
+
+            } else {
+                console.log(`Level "${levelName}" (${type}) not found for user "${loggedInUser}".`);
+                displayMessage(`Level "${levelName}" not found.`, true);
+            }
+        }
+
+        function listLevels(type) {
+            activeLevelList = type; // Set the active list type
+            const levelsListElement = document.getElementById('level-list');
+            const officialLevelsListElement = document.getElementById('official-level-list');
+            const noLevelsMessageElement = document.getElementById('no-levels-message'); // Get the new paragraph
+
+            levelsListElement.innerHTML = ''; // Clear current list
+            officialLevelsListElement.innerHTML = ''; // Clear official list
+            noLevelsMessageElement.style.display = 'none'; // Hide the message initially
+
+            // Update tab active state
+            myLevelsTab.classList.remove('active-tab');
+            officialLevelsTab.classList.remove('active-tab');
+            if (type === 'my') {
+                myLevelsTab.classList.add('active-tab');
+            } else {
+                officialLevelsTab.classList.add('active-tab');
+            }
+
+
+            if (!loggedInUser && type === 'my') {
+                 // If not logged in, hide My Levels and show Official Levels by default
+                 document.getElementById('level-selection').style.display = 'flex';
+                 levelsListElement.style.display = 'none';
+                 officialLevelsListElement.style.display = 'flex';
+                 listLevels('official'); // Force listing official levels
+                 return;
+            } else if (!loggedInUser && type === 'official') {
+                 // If not logged in, show Official Levels
+                 document.getElementById('level-selection').style.display = 'flex';
+                 levelsListElement.style.display = 'none';
+                 officialLevelsListElement.style.display = 'flex';
+
+                 const officialLevels = JSON.parse(localStorage.getItem('officialLevels') || '{}');
+                 const levelNames = Object.keys(officialLevels);
+
+                 if (levelNames.length > 0) {
+                     levelNames.forEach(levelName => {
+                         const levelRow = document.createElement('div');
+                         levelRow.classList.add('level-row');
+
+                         const loadButton = document.createElement('button');
+                         loadButton.textContent = levelName;
+                         loadButton.classList.add('load-button');
+                         loadButton.addEventListener('click', () => {
+                             loadLevel(levelName, 'official');
+                         });
+                         levelRow.appendChild(loadButton);
+
+                         // Add delete button only for HamBadem2
+                         if (loggedInUser === 'HamBadem2') {
+                             const deleteButton = document.createElement('button');
+                             deleteButton.classList.add('delete-button');
+                             deleteButton.innerHTML = `
+                                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="1em" height="1em">
+                                     <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                                  </svg>
+                             `;
+                             deleteButton.addEventListener('click', () => {
+                                 deleteLevel(levelName, 'official');
+                             });
+                             levelRow.appendChild(deleteButton);
+                         }
+
+                         officialLevelsListElement.appendChild(levelRow);
+                     });
+                 } else {
+                      officialLevelsListElement.style.display = 'none';
+                      noLevelsMessageElement.textContent = "No official levels available yet.";
+                      noLevelsMessageElement.style.display = 'block';
+                 }
+
+
+            } else if (loggedInUser && type === 'my') {
+                 // If logged in and viewing My Levels
+                 document.getElementById('level-selection').style.display = 'flex';
+                 levelsListElement.style.display = 'flex';
+                 officialLevelsListElement.style.display = 'none';
+
+
+                const users = JSON.parse(localStorage.getItem('triangleGameUsers') || '{}');
+                const userLevels = users[loggedInUser] && users[loggedInUser].levels ? users[loggedInUser].levels : {};
+                const levelNames = Object.keys(userLevels);
+
+
+                if (levelNames.length > 0) {
+                    levelNames.forEach(levelName => {
+                        // Create a container for the load and delete buttons
+                        const levelRow = document.createElement('div');
+                        levelRow.classList.add('level-row');
+
+                        // Create the load button
+                        const loadButton = document.createElement('button');
+                        loadButton.textContent = levelName;
+                        loadButton.classList.add('load-button'); // Use specific class for load button
+
+                        loadButton.addEventListener('click', () => {
+                            loadLevel(levelName, 'my');
+                        });
+                        levelRow.appendChild(loadButton);
+
+                        // Create the delete button (always visible for user's own levels)
+                        const deleteButton = document.createElement('button');
+                        deleteButton.classList.add('delete-button');
+                        // Add a trash can SVG icon
+                        deleteButton.innerHTML = `
+                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="1em" height="1em">
+                                <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                             </svg>
+                        `;
+
+                        deleteButton.addEventListener('click', () => {
+                            deleteLevel(levelName, 'my');
+                        });
+                        levelRow.appendChild(deleteButton);
+
+                        levelsListElement.appendChild(levelRow);
+                    });
+                } else {
+                    levelsListElement.style.display = 'none'; // Hide the list
+                    noLevelsMessageElement.textContent = "No saved levels yet for this account.";
+                    noLevelsMessageElement.style.display = 'block'; // Show the message
+                }
+            } else if (loggedInUser && type === 'official') {
+                 // If logged in and viewing Official Levels
+                 document.getElementById('level-selection').style.display = 'flex';
+                 levelsListElement.style.display = 'none';
+                 officialLevelsListElement.style.display = 'flex';
+
+                 const officialLevels = JSON.parse(localStorage.getItem('officialLevels') || '{}');
+                 const levelNames = Object.keys(officialLevels);
+
+                 if (levelNames.length > 0) {
+                     levelNames.forEach(levelName => {
+                         const levelRow = document.createElement('div');
+                         levelRow.classList.add('level-row');
+
+                         const loadButton = document.createElement('button');
+                         loadButton.textContent = levelName;
+                         loadButton.classList.add('load-button');
+                         loadButton.addEventListener('click', () => {
+                             loadLevel(levelName, 'official');
+                         });
+                         levelRow.appendChild(loadButton);
+
+                         // Add delete button only for HamBadem2
+                         if (loggedInUser === 'HamBadem2') {
+                             const deleteButton = document.createElement('button');
+                             deleteButton.classList.add('delete-button');
+                             deleteButton.innerHTML = `
+                                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="1em" height="1em">
+                                     <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                                  </svg>
+                             `;
+                             deleteButton.addEventListener('click', () => {
+                                 deleteLevel(levelName, 'official');
+                             });
+                             levelRow.appendChild(deleteButton);
+                         }
+
+                         officialLevelsListElement.appendChild(levelRow);
+                     });
+                 } else {
+                      officialLevelsListElement.style.display = 'none';
+                      noLevelsMessageElement.textContent = "No official levels available yet.";
+                      noLevelsMessageElement.style.display = 'block';
+                 }
+            }
+        }
+
+
+        // --- Global Key Listener (Q to Menu, Space to Restart) ---
+        window.addEventListener('keydown', (e) => {
+            // Allow Escape key to close forms
+            if (e.key === 'Escape') {
+                 if (gameState === 'account') {
+                      // Close account form and return to menu
+                      accountFormDiv.style.display = 'none';
+                      menuDiv.style.display = 'flex';
+                      gameState = 'menu';
+                      updateAccountUI(); // Ensure UI is correct after closing form
+                      listLevels(activeLevelList); // Refresh list
+                 } else if (gameState === 'saving_level') {
+                      // Close save level form and return to creator
+                      saveLevelForm.style.display = 'none';
+                      canvas.style.display = 'block'; // Show canvas again
+                      colorMenuDiv.style.display = 'flex'; // Show creator UI
+                      creatorControlsDiv.style.display = 'flex';
+                      gameState = 'level_creating';
+                      canvas.style.cursor = 'grab'; // Restore cursor
+                 }
+            }
+
+
+            if (e.code === 'KeyQ') { // Handle 'Q' in multiple states
+                if (gameState !== 'menu') { // Only do something if not already in the menu
+                     e.preventDefault();
+
+                     // --- Return to Menu ---
+                     gameState = 'menu';
+
+                     // --- Update UI Display ---
+                     menuDiv.style.display = 'flex';
+                     accountFormDiv.style.display = 'none'; // Hide account form
+                     saveLevelForm.style.display = 'none'; // Hide save form
+                     canvas.style.display = 'none';
+                     colorMenuDiv.style.display = 'none';
+                     creatorControlsDiv.style.display = 'none'; // Hide creator controls
+                     segmentEditControlsDiv.style.display = 'none'; // Hide segment edit controls
+                     messageDisplay.style.display = 'none'; // Hide any active message
+                     noLevelsMessage.style.display = 'none'; // Hide message
+                     countdownElement.style.display = 'none'; // Hide countdown
+                     timerElement.style.display = 'none'; // Hide timer
+                     timerElement.style.color = '#fff'; // Reset timer color
+
+
+                     // Level data is NOT cleared when returning to menu from play/level_complete
+                     // This allows returning to the creator to edit the level just played.
+                     // Data is cleared when starting a new game or entering creator from main menu (if no prior level state).
+
+
+                     // Reset triangle state
+                     triangleX = 0;
+                     triangleY = 0;
+                     triangleAngle = 0;
+                     vx = 0;
+                     vy = 0;
+                     vAngular = 0;
+
+                     // Reset camera to origin for menu view
+                     cameraX = 0;
+                     cameraY = 0;
+                     zoomLevel = 1.0;
+
+                     // Reset key states
+                     keys['w'] = false; // Ensure movement keys are reset
+                     keys['a'] = false;
+                     keys['d'] = false;
+
+                     // Restore default cursor
+                     canvas.style.cursor = 'default';
+
+                     // When returning to menu, show the appropriate level list based on login state
+                      if (loggedInUser) {
+                           activeLevelList = 'my'; // Default to My Levels if logged in
+                           listLevels('my'); // Show My Levels if logged in
+                      } else {
+                           activeLevelList = 'official'; // Default to Official Levels if not logged in
+                           listLevels('official'); // Show Official Levels if not logged in
+                      }
+                }
+            } else if (e.code === 'Space' && gameState === 'level_complete') { // Use 'Space' to restart level when level is complete
+                 e.preventDefault();
+                 console.log("Space pressed in level_complete - Restarting level.");
+
+                 // Reset triangle and physics state for restart
+                 triangleX = 0; // Start game at world origin
+                 triangleY = 0; // Start game at world origin
+                 triangleAngle = 0;
+                 vx = 0;
+                 vy = 0;
+                 vAngular = 0;
+
+                 // Reset camera to world origin instantly
+                 cameraX = 0;
+                 cameraY = 0;
+                 zoomLevel = gameZoomLevel; // Ensure zoom is correct for playing
+
+                 // Reset key states to prevent movement during countdown
+                 keys['w'] = false;
+                 keys['a'] = false;
+                 keys['d'] = false;
+
+                 // Reset timer color
+                 timerElement.style.color = '#fff';
+
+                 // Start the countdown, which will transition back to 'playing' state
+                 startCountdown();
+            } else if (e.code === 'Space' && gameState === 'playing') { // Existing restart logic during play
+                 e.preventDefault();
+                 console.log("Space pressed in playing - Restarting level.");
+
+                 // Reset triangle and physics state for restart
+                 triangleX = 0; // Start game at world origin
+                 triangleY = 0; // Start game at world origin
+                 triangleAngle = 0;
+                 vx = 0;
+                 vy = 0;
+                 vAngular = 0;
+
+                 // Reset camera to world origin instantly
+                 cameraX = 0;
+                 cameraY = 0;
+                 zoomLevel = gameZoomLevel; // Ensure zoom is correct for playing
+
+                 // Reset key states to prevent movement during countdown
+                 keys['w'] = false;
+                 keys['a'] = false;
+                 keys['d'] = false;
+
+                 // Reset timer color (should already be white, but good practice)
+                 timerElement.style.color = '#fff';
+
+                 // Start the countdown, which will transition back to 'playing' state
+                 startCountdown();
+            }
+        });
+
+        // --- Countdown Logic ---
+        function startCountdown() {
+             gameState = 'countdown'; // Set state to countdown
+             countdownValue = 3; // Start from 3
+             countdownStartTime = Date.now(); // Record start time
+
+             // Ensure canvas is visible and other menus are hidden
+             menuDiv.style.display = 'none';
+             accountFormDiv.style.display = 'none';
+             saveLevelForm.style.display = 'none'; // Hide save form
+             colorMenuDiv.style.display = 'none';
+             creatorControlsDiv.style.display = 'none';
+             segmentEditControlsDiv.style.display = 'none';
+             messageDisplay.style.display = 'none';
+             noLevelsMessage.style.display = 'none';
+             canvas.style.display = 'block';
+             countdownElement.style.display = 'block'; // Show countdown element
+             timerElement.style.display = 'none'; // Hide timer during countdown
+             timerElement.style.color = '#fff'; // Reset timer color
+             canvas.style.cursor = 'default'; // Default cursor during game/countdown
+
+             // Physics is handled in gameLoop - it only updates if gameState is 'playing'
+             // Triangle state and camera position are already reset in the keydown listener
+             // or when loading/starting a level before calling startCountdown().
+
+             // Reset timer variables
+             gameStartTime = 0;
+             elapsedGameTime = 0;
+             timerElement.textContent = '0.000'; // Reset timer display
+        }
+
+
+        // --- Button Event Listeners ---
+        playButton.addEventListener('click', () => {
+            // Start a new, empty level
+            nodes = []; // Clear any previous nodes/segments
+            segments = [];
+            finishLines = []; // Clear finish lines
+            activeWhiteNode = null; // Clear active node
+            activeBlackNode = null; // Clear active black node
+            clearSelection(); // Clear any active selection
+            isWhitePlacementActive = true; // Reset white placement state for new game
+            updateSelectedColorUI(); // Update UI
+
+
+            // Prepare for game start (reset triangle state)
+            triangleX = 0; // Start game at world origin
+            triangleY = 0; // Start game at world origin
+            triangleAngle = 0;
+            vx = 0;
+            vy = 0;
+            vAngular = 0;
+
+            // Camera tracks triangle in game mode initially
+            cameraX = 0; // Reset camera to origin for new game
+            cameraY = 0; // Reset camera to origin for new game
+            zoomLevel = gameZoomLevel;
+
+            setCanvasSize(); // Ensure canvas size is correct
+            keys['a'] = false;
+            keys['d'] = false;
+
+            // Start the countdown
+            startCountdown();
+
+        });
+
+        levelCreatorButton.addEventListener('click', () => {
+            gameState = 'level_creating';
+            menuDiv.style.display = 'none';
+            accountFormDiv.style.display = 'none'; // Hide account form
+            saveLevelForm.style.display = 'none'; // Hide save form
+            canvas.style.display = 'block';
+             colorMenuDiv.style.display = 'flex';
+             creatorControlsDiv.style.display = 'flex'; // Show creator controls
+             segmentEditControlsDiv.style.display = 'none'; // Hide segment edit controls initially
+             noLevelsMessage.style.display = 'none'; // Hide message
+             countdownElement.style.display = 'none'; // Hide countdown
+             timerElement.style.display = 'none'; // Hide timer
+             timerElement.style.color = '#fff'; // Reset timer color
+
+
+             // Reset triangle position for creator view (place it at world origin)
+             triangleX = 0;
+             triangleY = 0;
+             triangleAngle = 0; // Reset angle for creator view
+             vx = 0; // Ensure no velocity
+             vy = 0;
+             vAngular = 0;
+
+
+             // Reset camera to origin for the creator view
+             cameraX = 0;
+             cameraY = 0;
+             zoomLevel = 1.0; // Start creator at default zoom
+
+             // Level data (nodes, segments, finishLines) is preserved if returning from playing,
+             // but cleared if coming from the main menu to start a new level.
+             // This logic seems fine.
+
+             activeWhiteNode = null; // Clear any active node
+             activeBlackNode = null; // Clear any active black node
+             clearSelection(); // Clear any active selection
+             isWhitePlacementActive = true; // Start creator in white placement mode
+             updateSelectedColorUI(); // Update UI
+
+
+            setCanvasSize();
+             canvas.style.cursor = 'grab';
+        });
+
+        // Account Button Listener (Toggles between form and logged-in state)
+        accountButton.addEventListener('click', () => {
+            if (loggedInUser) {
+                // If logged in, maybe show account details or just stay on menu for now
+                // For now, just list levels if not already listing them
+                 if (gameState !== 'menu') {
+                     // If not in menu, go back to menu state first
+                     gameState = 'menu';
+                     menuDiv.style.display = 'flex';
+                     accountFormDiv.style.display = 'none'; // Hide account form
+                     saveLevelForm.style.display = 'none'; // Hide save form
+                     canvas.style.display = 'none';
+                     colorMenuDiv.style.display = 'none';
+                     creatorControlsDiv.style.display = 'none';
+                     segmentEditControlsDiv.style.display = 'none';
+                     messageDisplay.style.display = 'none';
+                     countdownElement.style.display = 'none'; // Hide countdown
+                     timerElement.style.display = 'none'; // Hide timer
+                     timerElement.style.color = '#fff'; // Reset timer color
+
+                      // Clear game/creator state (only if returning from play/level_complete?)
+                      // Let's keep the current logic where data is preserved if coming from play/level_complete
+                      // to allow editing the just-played level. Clearing happens on "Play New Level" or
+                      // when entering creator from a fresh menu state.
+                      // nodes.length = 0;
+                      // segments.length = 0;
+                      // finishLines.length = 0;
+                      activeWhiteNode = null;
+                      activeBlackNode = null; // Clear active black node
+                      clearSelection();
+                      isWhitePlacementActive = true;
+                      updateSelectedColorUI();
+                      triangleX = 0; triangleY = 0; triangleAngle = 0; vx = 0; vy = 0; vAngular = 0;
+                      cameraX = 0; cameraY = 0; zoomLevel = 1.0;
+                      keys['w'] = false; keys['a'] = false; keys['d'] = false;
+                      canvas.style.cursor = 'default';
+
+                 }
+                 // Ensure level list is visible and updated
+                 document.getElementById('level-selection').style.display = 'flex';
+                 // loggedInUserDisplay and logoutButton are now outside this section and managed by updateAccountUI
+                 updateAccountUI(); // Ensure logged-in user display is visible
+                 listLevels(activeLevelList); // List levels for the currently active tab
+
+
+            } else {
+                // If not logged in, show the account form
+                 gameState = 'account'; // Set game state to account
+                 menuDiv.style.display = 'none'; // Hide the main menu
+                 accountFormDiv.style.display = 'flex'; // Show the account form
+                 saveLevelForm.style.display = 'none'; // Hide save form
+                 canvas.style.display = 'none'; // Hide the canvas
+                 colorMenuDiv.style.display = 'none'; // Hide color menu
+                 creatorControlsDiv.style.display = 'none'; // Hide creator controls
+                 segmentEditControlsDiv.style.display = 'none'; // Hide segment edit controls
+                 messageDisplay.style.display = 'none'; // Hide any active message
+                 noLevelsMessage.style.display = 'none'; // Hide message
+                 countdownElement.style.display = 'none'; // Hide countdown
+                 timerElement.style.display = 'none'; // Hide timer
+                 timerElement.style.color = '#fff'; // Reset timer color
+
+
+                 // Hide level selection section and logged-in user info
+                 document.getElementById('level-selection').style.display = 'none';
+                 updateAccountUI(); // Ensure logged-in user display is hidden
+
+
+                 // Clear any previous input
+                 usernameInput.value = '';
+                 passwordInput.value = '';
+
+                 // Clear any active selection or placement state
+                 activeWhiteNode = null;
+                 activeBlackNode = null; // Clear active black node
+                 clearSelection();
+                 isWhitePlacementActive = true; // Reset white placement state when leaving creator
+                 updateSelectedColorUI(); // Update UI
+            }
+        });
+
+        // Tab Listeners
+        myLevelsTab.addEventListener('click', () => {
+             if (loggedInUser) { // Only show My Levels if logged in
+                 listLevels('my');
+             } else {
+                 displayMessage("Please log in to view your levels.", true);
+             }
+        });
+
+        officialLevelsTab.addEventListener('click', () => {
+             listLevels('official'); // Official levels are visible to everyone
+        });
+
+
+        // Modified Save Level Button Listener to show the form
+        saveLevelButton.addEventListener('click', () => {
+             if (!loggedInUser) {
+                  displayMessage("Please log in to save levels.", true);
+                  return;
+             }
+
+             gameState = 'saving_level'; // Set game state to saving_level
+
+             // Hide other UI elements
+             canvas.style.display = 'none';
+             colorMenuDiv.style.display = 'none';
+             creatorControlsDiv.style.display = 'none';
+             segmentEditControlsDiv.style.display = 'none'; // Hide segment edit controls
+             messageDisplay.style.display = 'none';
+
+             // Show the save level form
+             saveLevelForm.style.display = 'flex';
+             levelNameInput.value = ''; // Clear previous input
+
+             // Show/hide official save option based on user
+             if (loggedInUser === 'HamBadem2') {
+                 saveTypeSelection.style.display = 'flex';
+                 saveAsMyRadio.checked = true; // Default to 'My Level'
+             } else {
+                 saveTypeSelection.style.display = 'none';
+                 saveAsMyRadio.checked = true; // Ensure 'My Level' is selected even if hidden
+             }
+
+             canvas.style.cursor = 'default'; // Default cursor over the form
+        });
+
+        // Confirm Save Button Listener
+        confirmSaveButton.addEventListener('click', () => {
+            const levelName = levelNameInput.value.trim();
+            if (levelName === "") {
+                 displayMessage("Level name cannot be empty.", true);
+                 return;
+            }
+
+            let saveType = 'my'; // Default save type
+            if (loggedInUser === 'HamBadem2') {
+                 // Get selected radio button value
+                 saveType = document.querySelector('input[name="saveType"]:checked').value;
+            }
+
+            performSaveLevel(levelName, saveType); // Call the core save logic
+
+            // Hide the save level form and return to the creator state
+            saveLevelForm.style.display = 'none';
+            canvas.style.display = 'block'; // Show canvas again
+            colorMenuDiv.style.display = 'flex'; // Show creator UI
+            creatorControlsDiv.style.display = 'flex';
+            gameState = 'level_creating';
+            canvas.style.cursor = 'grab'; // Restore cursor
+        });
+
+        // Cancel Save Button Listener
+        cancelSaveButton.addEventListener('click', () => {
+            // Hide the save level form and return to the creator state
+            saveLevelForm.style.display = 'none';
+            canvas.style.display = 'block'; // Show canvas again
+            colorMenuDiv.style.display = 'flex'; // Show creator UI
+            creatorControlsDiv.style.display = 'flex';
+            gameState = 'level_creating';
+            canvas.style.cursor = 'grab'; // Restore cursor
+             displayMessage("Level save cancelled.");
+        });
+
+
+        saveSegmentButton.addEventListener('click', () => {
+             // Save button logic applies to either a dragged node, a selected segment, or a selected finish line
+             if (draggedNode) {
+                  // Node position is already updated by mousemove. Just clear the selection.
+                  console.log("Node position saved.");
+             } else if (selectedSegment) {
+                  // Segment nodes' positions are updated by dragging the node. Just clear selection.
+                  console.log("Segment changes saved.");
+             } else if (selectedFinishLine) {
+                 // Finish line nodes' positions are updated by dragging the node. Just clear selection.
+                 console.log("Finish line changes saved.");
+             }
+
+             clearSelection(); // Clear the selection state
+        });
+
+        deleteSegmentButton.addEventListener('click', () => {
+             // Delete button logic applies to either a dragged node, a selected segment, or a selected finish line
+             if (draggedNode) {
+                 if (confirm("Are you sure you want to delete this node and all connected segments and finish lines?")) {
+                     // Remove the dragged node from the nodes array
+                     nodes = nodes.filter(node => node !== draggedNode);
+                     console.log("Node deleted:", draggedNode);
+
+                     // Remove any segments connected to this node
+                     segments = segments.filter(seg => seg.node1 !== draggedNode && seg.node2 !== draggedNode);
+                     console.log("Connected segments removed.");
+
+                     // Remove any finish lines connected to this node
+                      finishLines = finishLines.filter(fl => fl.node1 !== draggedNode && fl.node2 !== draggedNode);
+                      console.log("Connected finish lines removed.");
+
+
+                     clearSelection(); // Clear the selection and hide buttons
+                 }
+             } else if (selectedSegment) {
+                 if (confirm("Are you sure you want to delete this segment?")) {
+                     // Remove the selected segment from the segments array
+                     segments = segments.filter(seg => seg !== selectedSegment);
+                     console.log("Segment deleted.");
+
+                     // Optional: Clean up isolated nodes
+                     // Check if the nodes connected to the deleted segment are now isolated
+                     // and not part of any other segment or finish line. If so, remove them.
+                     const nodesToRemove = [];
+                     [selectedSegment.node1, selectedSegment.node2].forEach(node => {
+                          const isNodeStillUsedBySegment = segments.some(seg => seg.node1 === node || seg.node2 === node);
+                          const isNodeStillUsedByFinishLine = finishLines.some(fl => fl.node1 === node || fl.node2 === node);
+                          // Also check if it's the active white node for drawing a new segment or active black node
+                          const isNodeActiveWhite = (activeWhiteNode === node);
+                          const isNodeActiveBlack = (activeBlackNode === node);
+
+
+                          if (!isNodeStillUsedBySegment && !isNodeStillUsedByFinishLine && !isNodeActiveWhite && !isNodeActiveBlack) {
+                              nodesToRemove.push(node);
+                          }
+                     });
+
+                     nodes = nodes.filter(node => !nodesToRemove.includes(node));
+                     console.log("Isolated nodes removed:", nodesToRemove);
+
+
+                     clearSelection(); // Clear the selection and hide buttons
+                 }
+             } else if (selectedFinishLine) {
+                  if (confirm("Are you sure you want to delete this finish line?")) {
+                      // Remove the selected finish line from the finishLines array
+                      finishLines = finishLines.filter(fl => fl !== selectedFinishLine);
+                      console.log("Finish line deleted.");
+
+                      // Optional: Clean up isolated nodes
+                      // Check if the nodes connected to the deleted finish line are now isolated
+                      // and not part of any other segment or finish line. If so, remove them.
+                      const nodesToRemove = [];
+                      [selectedFinishLine.node1, selectedFinishLine.node2].forEach(node => {
+                           const isNodeStillUsedBySegment = segments.some(seg => seg.node1 === node || seg.node2 === node);
+                           const isNodeStillUsedByFinishLine = finishLines.some(fl => fl.node1 === node || fl.node2 === node);
+                           // Also check if it's the active white node for drawing a new segment or active black node
+                           const isNodeActiveWhite = (activeWhiteNode === node);
+                           const isNodeActiveBlack = (activeBlackNode === node);
+
+
+                           if (!isNodeStillUsedBySegment && !isNodeStillUsedByFinishLine && !isNodeActiveWhite && !isNodeActiveBlack) {
+                               nodesToRemove.push(node);
+                           }
+                      });
+
+                      nodes = nodes.filter(node => !nodesToRemove.includes(node));
+                      console.log("Isolated nodes removed:", nodesToRemove);
+
+
+                      clearSelection(); // Clear the selection and hide buttons
+                  }
+             }
+        });
+
+        // Account Form Button Listeners
+        registerButton.addEventListener('click', () => {
+             const username = usernameInput.value.trim();
+             const password = passwordInput.value;
+
+             if (username === "" || password === "") {
+                  displayMessage("Username and password cannot be empty.", true);
+                  return;
+             }
+
+             // Get existing users from localStorage
+             const users = JSON.parse(localStorage.getItem('triangleGameUsers') || '{}');
+
+             if (users[username]) {
+                  displayMessage(`Username "${username}" already exists.`, true);
+             } else {
+                  // Register the new user
+                  users[username] = { password: password, levels: {} }; // Store password and initialize levels object
+                  localStorage.setItem('triangleGameUsers', JSON.stringify(users));
+                  displayMessage(`User "${username}" registered successfully!`);
+                  usernameInput.value = '';
+                  passwordInput.value = '';
+             }
+        });
+
+        loginButton.addEventListener('click', () => {
+             const username = usernameInput.value.trim();
+             const password = passwordInput.value;
+
+             if (username === "" || password === "") {
+                  displayMessage("Please enter username and password.", true);
+                  return;
+             }
+
+             // Get existing users from localStorage
+             const users = JSON.parse(localStorage.getItem('triangleGameUsers') || '{}');
+
+             if (users[username] && users[username].password === password) {
+                  loggedInUser = username; // Set the logged-in user
+                  displayMessage(`Welcome, ${username}!`);
+                  console.log(`User "${username}" logged in.`);
+
+                  // Hide account form and show main menu
+                  accountFormDiv.style.display = 'none';
+                  menuDiv.style.display = 'flex';
+                  gameState = 'menu'; // Transition to menu state
+
+                  // Update UI to show logged-in state and levels
+                  updateAccountUI();
+                  activeLevelList = 'my'; // Set active list to 'my' on login
+                  listLevels(activeLevelList); // List levels for the logged-in user
+
+
+             } else {
+                  displayMessage("Invalid username or password.", true);
+             }
+             passwordInput.value = ''; // Clear password field after login attempt
+        });
+
+        // Logout Button Listener
+        logoutButton.addEventListener('click', () => {
+             loggedInUser = null; // Clear the logged-in user
+             displayMessage("Logged out successfully.");
+             console.log("User logged out.");
+
+             // Update UI to reflect logged-out state
+             updateAccountUI();
+             activeLevelList = 'official'; // Set active list to 'official' on logout
+             listLevels(activeLevelList); // List official levels when logged out
+
+             // Ensure we are in the menu state
+             if (gameState !== 'menu') {
+                  gameState = 'menu';
+                  menuDiv.style.display = 'flex';
+                  accountFormDiv.style.display = 'none'; // Hide account form
+                  saveLevelForm.style.display = 'none'; // Hide save form
+                  canvas.style.display = 'none';
+                  colorMenuDiv.style.display = 'none';
+                  creatorControlsDiv.style.display = 'none';
+                  segmentEditControlsDiv.style.display = 'none';
+                  messageDisplay.style.display = 'none';
+                  noLevelsMessage.style.display = 'none'; // Hide message
+                  countdownElement.style.display = 'none'; // Hide countdown
+                  timerElement.style.display = 'none'; // Hide timer
+                  timerElement.style.color = '#fff'; // Reset timer color
+                   // Clear game/creator state (only if returning from play/level_complete?)
+                      // Let's keep the current logic where data is preserved if coming from play/level_complete
+                      // to allow editing the just-played level. Clearing happens on "Play New Level" or
+                      // when entering creator from a fresh menu state.
+                      // nodes.length = 0;
+                      // segments.length = 0;
+                      // finishLines.length = 0;
+                  activeWhiteNode = null;
+                  activeBlackNode = null; // Clear active black node
+                  clearSelection();
+                  isWhitePlacementActive = true;
+                  updateSelectedColorUI();
+                  triangleX = 0; triangleY = 0; triangleAngle = 0; vx = 0; vy = 0; vAngular = 0;
+                  cameraX = 0; cameraY = 0; zoomLevel = 1.0;
+                  keys['w'] = false; keys['a'] = false; keys['d'] = false;
+                  canvas.style.cursor = 'default';
+             }
+
+        });
+
+        // Function to update account-related UI elements visibility
+        function updateAccountUI() {
+             if (loggedInUser) {
+                  loggedInUserDisplay.style.display = 'block';
+                  usernameDisplay.textContent = loggedInUser;
+                  logoutButton.style.display = 'block';
+                  myLevelsTab.style.display = 'block'; // Show My Levels tab if logged in
+                  // Hide login/register buttons if they are visible (e.g., user logs in from account form)
+                   // accountFormDiv.style.display = 'none'; // This is handled by loginButton click
+             } else {
+                  loggedInUserDisplay.style.display = 'none';
+                  usernameDisplay.textContent = '';
+                  logoutButton.style.display = 'none';
+                  myLevelsTab.style.display = 'none'; // Hide My Levels tab if not logged in
+                  // Show login/register buttons if needed (e.g., user logs out from menu)
+                   // accountFormDiv.style.display = 'flex'; // This is handled by accountButton click
+             }
+        }
+
+
+        // gameLoop(); // Start the game loop - now called in window.onload
+        // listSavedLevels(); // List levels on initial load - now called in window.onload
+        // updateSelectedColorUI(); // Set initial white square state - now called in window.onload
+        // updateAccountUI(); // Update account related UI on load - now called in window.onload
+
+    </script>
+</body>
+</html>
+<!-- partial -->
+  
+</body>
+</html>
