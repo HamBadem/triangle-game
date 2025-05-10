@@ -1,14 +1,4 @@
 <!DOCTYPE html>
-<html lang="en" >
-<head>
-  <meta charset="UTF-8">
-  <title>Narrow Arrow</title>
-  
-
-</head>
-<body>
-<!-- partial:index.partial.html -->
-<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -531,8 +521,8 @@
         <div id="level-selection">
             <h3>Levels</h3>
             <div id="level-tabs">
-                 <button id="myLevelsTab" class="active-tab">My Levels</button>
                  <button id="officialLevelsTab">Official Levels</button>
+                 <button id="myLevelsTab">My Levels</button>
             </div>
              <p id="no-levels-message">No saved levels yet for this account.</p> <div id="level-list">
                 </div>
@@ -653,7 +643,8 @@
         let selectedColor = 'white';
         let isWhitePlacementActive = true; // New state: true means white color is for placement
         let loggedInUser = null; // Store the currently logged-in user
-        let activeLevelList = 'my'; // 'my' or 'official' - determines which list is shown
+        let activeLevelList = 'official'; // Default to 'official'
+
 
         // --- Countdown State ---
         let countdownValue = 3;
@@ -704,8 +695,13 @@
 
 
         // --- Game Physics Properties ---
-        // Triangle properties (position is now in WORLD coordinates)
         const triangleSize = 30; // Still screen pixels for drawing size, but relative to world position
+        // Use the circumcircle radius for collision detection
+        // Corrected circumradius calculation for the currently drawn isosceles triangle (base = height)
+        const triangleCollisionRadius = (5/8) * triangleSize; // World units for collision radius
+        const nodeCollisionRadius = 10; // World units for node collision radius
+
+
         let triangleX = 0; // World x-coordinate
         let triangleY = 0; // World y-coordinate
         let triangleAngle = 0; // in radians
@@ -715,13 +711,13 @@
         let vy = 0; // velocity y (world units per frame)
         let vAngular = 0; // angular velocity (radians per frame)
 
-        const thrust = 0.085; // world units per frame per frame (acceleration)
+        const thrust = 0.07; // world units per frame per frame (acceleration) - Slightly reduced
         const dragFactor = 0.97; // linear drag multiplier
 
         const rotationalAcceleration = 0.003; // radians per frame per frame (angular acceleration)
         const angularDragFactor = 0.94; // angular drag multiplier
 
-        const maxSpeed = 10; // Max linear speed (world units per frame)
+        const maxSpeed = 12; // Max linear speed (world units per frame) - Slightly increased
         const maxAngularSpeed = 0.15; // Max angular speed (radians per frame)
 
         // --- Collision Properties ---
@@ -758,9 +754,148 @@
         const keys = {};
 
         window.addEventListener('keydown', (e) => {
-            if (gameState === 'playing') { // Only process keys if playing
-                keys[e.key.toLowerCase()] = true;
+            // Allow Escape key to close forms regardless of state
+            if (e.key === 'Escape') {
+                 if (gameState === 'account') {
+                      // Close account form and return to menu
+                      accountFormDiv.style.display = 'none';
+                      menuDiv.style.display = 'flex';
+                      gameState = 'menu';
+                      updateAccountUI(); // Ensure UI is correct after closing form
+                      listLevels(activeLevelList); // Refresh list
+                 } else if (gameState === 'saving_level') {
+                      // Close save level form and return to creator
+                      saveLevelForm.style.display = 'none';
+                      canvas.style.display = 'block'; // Show canvas again
+                      colorMenuDiv.style.display = 'flex'; // Show creator UI
+                      creatorControlsDiv.style.display = 'flex';
+                      gameState = 'level_creating';
+                      canvas.style.cursor = 'grab'; // Restore cursor
+                 }
             }
+
+            // Prevent 'Q' from triggering menu if typing in the save level form OR on the account page
+            if (e.code === 'KeyQ') { // Handle 'Q' in multiple states
+                // Check if the active element is NOT an input field (like level name or account form)
+                const isInputFocused = document.activeElement.tagName === 'INPUT';
+
+                // Prevent 'Q' from triggering menu if not already in the menu AND not in saving_level state AND not in account state AND not focused on an input
+                if (gameState !== 'menu' && gameState !== 'saving_level' && gameState !== 'account' && !isInputFocused) {
+                     e.preventDefault();
+
+                     // --- Return to Menu ---
+                     gameState = 'menu';
+
+                     // --- Update UI Display ---
+                     menuDiv.style.display = 'flex';
+                     accountFormDiv.style.display = 'none'; // Hide account form
+                     saveLevelForm.style.display = 'none'; // Hide save form
+                     canvas.style.display = 'none';
+                     colorMenuDiv.style.display = 'none';
+                     creatorControlsDiv.style.display = 'none'; // Hide creator controls
+                     segmentEditControlsDiv.style.display = 'none'; // Hide segment edit controls
+                     messageDisplay.style.display = 'none'; // Hide any active message
+                     noLevelsMessage.style.display = 'none'; // Hide message
+                     countdownElement.style.display = 'none'; // Hide countdown
+                     timerElement.style.display = 'none'; // Hide timer
+                     timerElement.style.color = '#fff'; // Reset timer color
+
+
+                     // Level data is NOT cleared when returning to menu from play/level_complete
+                     // This allows returning to the creator to edit the level just played.
+                     // Data is cleared when starting a new game or entering creator from main menu (if no prior level state).
+
+
+                     // Reset triangle state
+                     triangleX = 0;
+                     triangleY = 0;
+                     triangleAngle = 0;
+                     vx = 0;
+                     vy = 0;
+                     vAngular = 0;
+
+                     // Reset camera to origin for menu view
+                     cameraX = 0;
+                     cameraY = 0;
+                     zoomLevel = 1.0;
+
+                     // Reset key states
+                     keys['w'] = false; // Ensure movement keys are reset
+                     keys['a'] = false;
+                     keys['d'] = false;
+
+                     // Restore default cursor
+                     canvas.style.cursor = 'default';
+
+                     // When returning to menu, show the appropriate level list based on login state
+                      if (loggedInUser) {
+                           activeLevelList = 'my'; // Default to My Levels if logged in
+                           listLevels('my'); // Show My Levels if logged in
+                      } else {
+                           activeLevelList = 'official'; // Default to Official Levels if not logged in
+                           listLevels('official'); // Show Official Levels if not logged in
+                      }
+                }
+            } else if (e.code === 'Space' && gameState === 'level_complete') { // Use 'Space' to restart level when level is complete
+                 e.preventDefault();
+                 console.log("Space pressed in level_complete - Restarting level.");
+
+                 // Reset triangle and physics state for restart
+                 triangleX = 0; // Start game at world origin
+                 triangleY = 0; // Start game at world origin
+                 triangleAngle = 0;
+                 vx = 0;
+                 vy = 0;
+                 vAngular = 0;
+
+                 // Reset camera to world origin instantly
+                 cameraX = 0;
+                 cameraY = 0;
+                 zoomLevel = gameZoomLevel; // Ensure zoom is correct for playing
+
+                 // Reset key states to prevent movement during countdown
+                 keys['w'] = false;
+                 keys['a'] = false;
+                 keys['d'] = false;
+
+                 // Reset timer color
+                 timerElement.style.color = '#fff';
+
+                 // Start the countdown, which will transition back to 'playing' state
+                 startCountdown();
+            } else if (e.code === 'Space' && gameState === 'playing') { // Existing restart logic during play
+                 e.preventDefault();
+                 console.log("Space pressed in playing - Restarting level.");
+
+                 // Reset triangle and physics state for restart
+                 triangleX = 0; // Start game at world origin
+                 triangleY = 0; // Start game at world origin
+                 triangleAngle = 0;
+                 vx = 0;
+                 vy = 0;
+                 vAngular = 0;
+
+                 // Reset camera to world origin instantly
+                 cameraX = 0;
+                 cameraY = 0;
+                 zoomLevel = gameZoomLevel; // Ensure zoom is correct for playing
+
+                 // Reset key states to prevent movement during countdown
+                 keys['w'] = false;
+                 keys['a'] = false;
+                 keys['d'] = false;
+
+                 // Reset timer color (should already be white, but good practice)
+                 timerElement.style.color = '#fff';
+
+                 // Start the countdown, which will transition back to 'playing' state
+                 startCountdown();
+            }
+
+             // Capture movement keys only if in 'playing' state
+             if (gameState === 'playing') {
+                 keys[e.key.toLowerCase()] = true;
+             }
         });
 
         window.addEventListener('keyup', (e) => {
@@ -772,31 +907,55 @@
         // --- Drawing Functions ---
         // Function to draw the triangle (now draws relative to the camera)
         function drawTriangle() {
-            ctx.save();
+             // Only draw the triangle if not in the level_complete state
+             if (gameState !== 'level_complete') {
+                 ctx.save();
 
-            // Convert triangle's world position to screen position using the current camera view
-            const screenX = (triangleX - cameraX) * zoomLevel + canvas.width / 2;
-            const screenY = (triangleY - cameraY) * zoomLevel + canvas.height / 2;
+                 // Convert triangle's world position to screen position using the current camera view
+                 const screenX = (triangleX - cameraX) * zoomLevel + canvas.width / 2;
+                 const screenY = (triangleY - cameraY) * zoomLevel + canvas.height / 2;
 
-            ctx.translate(screenX, screenY);
-            ctx.rotate(triangleAngle);
+                 ctx.translate(screenX, screenY);
+                 ctx.rotate(triangleAngle);
 
-            const currentTriangleSize = triangleSize * zoomLevel; // Scale triangle size by zoom
+                 const currentTriangleSize = triangleSize * zoomLevel; // Scale triangle size by zoom
 
-            ctx.beginPath();
-            ctx.moveTo(0, -currentTriangleSize / 2);
-            ctx.lineTo(-currentTriangleSize / 2, currentTriangleSize / 2);
-            ctx.lineTo(currentTriangleSize / 2, currentTriangleSize / 2);
-            ctx.closePath();
+                 // --- Draw the Circumcircle Hitbox Visualization ---
+                 ctx.strokeStyle = 'gold'; // Gold color for the hitbox visualization
+                 ctx.lineWidth = 1; // Thin line for visualization
+                 ctx.fillStyle = 'rgba(255, 215, 0, 0.3)'; // Semi-transparent gold fill
 
-            ctx.fillStyle = '#00ff00';
-            ctx.fill();
-            ctx.strokeStyle = '#ffffff';
-            ctx.lineWidth = 2;
+                 // The circumcenter for this triangle is at (0, triangleSize / 8) relative to the triangle's origin (which is the point we translated to)
+                 // We need to scale this relative position by the current zoom level
+                 const hitboxRelativeCircumcenterX = 0; // Circumcenter x is 0 in the triangle's local space
+                 const hitboxRelativeCircumcenterY = (triangleSize / 8) * zoomLevel; // Circumcenter y is 1/8 of the original triangle size, scaled by zoom
 
-            ctx.stroke();
+                 const hitboxScreenRadius = triangleCollisionRadius * zoomLevel; // Scale the circumradius by the current zoom level for drawing
 
-            ctx.restore();
+                 ctx.beginPath();
+                 // Draw the circle at the circumcenter's position relative to the translated/rotated origin
+                 ctx.arc(hitboxRelativeCircumcenterX, hitboxRelativeCircumcenterY, hitboxScreenRadius, 0, Math.PI * 2);
+                 ctx.fill(); // Fill the circle
+                 ctx.stroke(); // Draw the outline as well
+
+
+                 // --- Draw the Triangle ---
+                 ctx.beginPath();
+                 // Adjusted drawing points to match the isosceles triangle with base = height
+                 ctx.moveTo(0, -currentTriangleSize / 2); // Top vertex
+                 ctx.lineTo(-currentTriangleSize / 2, currentTriangleSize / 2); // Bottom left vertex
+                 ctx.lineTo(currentTriangleSize / 2, currentTriangleSize / 2); // Bottom right vertex
+                 ctx.closePath();
+
+                 ctx.fillStyle = '#00ff00'; // Keep triangle color green
+                 ctx.fill();
+                 ctx.strokeStyle = '#ffffff';
+                 ctx.lineWidth = 2;
+
+                 ctx.stroke();
+
+                 ctx.restore(); // Restore the context after drawing both
+             }
         }
 
         const gridCellSize = 40;
@@ -1012,7 +1171,7 @@
             const lineLenSq = (x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1);
             if (lineLenSq === 0) return distance({x: px, y: py}, {x: x1, y: y1}); // Segment is a point
 
-            const t = ((px - x1) * (x2 - x1) + (py - y1) * (y2 - y1)) / lineLenSq;
+            const t = ((px - x1) * (x2 - x1) + (py - y1) * (py - y1)) / lineLenSq;
 
             // Clamp t to the range [0, 1] to find the closest point on the segment
             const clampedT = Math.max(0, Math.min(1, t));
@@ -1026,13 +1185,15 @@
          function findClosestWhiteSegment(px, py) {
              let closestSegment = null;
              let minDistance = Infinity;
-             const triangleRadiusWorld = triangleSize / 2;
+             // Use the triangle's collision radius (circumcircle radius)
+             const collisionCheckRadius = triangleCollisionRadius + collisionBuffer;
+
 
              for (const segment of segments) {
                  if (segment.color === 'white') {
                      const dist = pointToSegmentDistance(px, py, segment.node1.x, segment.node1.y, segment.node2.x, segment.node2.y);
                      // Check if the distance is within collision range and is the minimum so far
-                     if (dist < triangleRadiusWorld + collisionBuffer && dist < minDistance) {
+                     if (dist < collisionCheckRadius && dist < minDistance) {
                          minDistance = dist;
                          closestSegment = segment;
                      }
@@ -1041,8 +1202,28 @@
              return closestSegment;
          }
 
-         // Helper function to find a node near given world coordinates within a tolerance
-         function findNodeNear(worldX, worldY, tolerance) {
+         // Helper function to find the closest white node to a point within collision range
+         function findClosestWhiteNode(px, py) {
+             let closestNode = null;
+             let minDistance = Infinity;
+             const collisionCheckRadius = triangleCollisionRadius + nodeCollisionRadius + collisionBuffer;
+
+             for (const node of nodes) {
+                  if (node.color === 'white') { // Only check white nodes
+                       const dist = distance({x: px, y: py}, {x: node.x, y: node.y});
+                       if (dist < collisionCheckRadius && dist < minDistance) {
+                            minDistance = dist;
+                            closestNode = node;
+                       }
+                  }
+             }
+             return closestNode;
+         }
+
+
+        // Helper function to find a node near given world coordinates within a tolerance
+         // This is used for clicking/selecting nodes in the creator, not for physics collision
+        function findNodeNear(worldX, worldY, tolerance) {
              for (const node of nodes) {
                  const dist = distance({x: worldX, y: worldY}, {x: node.x, y: node.y});
                  if (dist < tolerance) {
@@ -1050,7 +1231,7 @@
                  }
              }
              return null;
-         }
+        }
 
         // Helper function to check if a point is inside a checkered rectangle
         function isPointInsideCheckeredRectangle(px, py, node1, node2) {
@@ -1077,8 +1258,12 @@
 
 
         // Check for collisions between the triangle and placed obstacles at a given position
+        // This function is now simplified, just checking if *any* collision occurs,
+        // the response logic is in updatePhysics.
         function checkCollisions(checkX, checkY) {
-            const triangleRadiusWorld = triangleSize / 2; // Use half the triangle size in world units
+            const segmentCollisionRadius = triangleCollisionRadius + collisionBuffer;
+            const nodeCollisionCheckRadius = triangleCollisionRadius + nodeCollisionRadius + collisionBuffer;
+
 
             // Check collision with white segments
             for (const segment of segments) {
@@ -1089,36 +1274,35 @@
                          segment.node2.x, segment.node2.y
                      );
 
-                     if (dist < triangleRadiusWorld + collisionBuffer) {
+                     if (dist < segmentCollisionRadius) {
                          return true; // Collision detected with a white segment
                      }
                 }
             }
 
+             // Check collision with white nodes
+             for (const node of nodes) {
+                  if (node.color === 'white') { // Only check white nodes
+                       const dist = distance({x: checkX, y: checkY}, {x: node.x, y: node.y});
+                       if (dist < nodeCollisionCheckRadius) {
+                            return true; // Collision detected with a white node
+                       }
+                  }
+             }
+
+
             // Check collision with finish lines (checkered rectangles)
             for (const finishLine of finishLines) {
                  if (isPointInsideCheckeredRectangle(checkX, checkY, finishLine.node1, finishLine.node2)) {
-                      // Collision with a finish line - this should trigger level completion, not stop movement
-                      // For now, just log it. We'll add win condition later.
-                      console.log("Collision with Finish Line!");
-                      // Return false here so it doesn't stop movement like a wall
-                      // In a real game, this would trigger a win state.
-                      // For now, it's just a visual element and potential win trigger.
+                      // Collision with a finish line - WIN CONDITION!
+                      // This function is just for checking if *any* collision occurs that requires a response.
+                      // The win condition check is done separately in gameLoop.
+                      // For now, we don't return true here as it's not a wall collision.
                  }
             }
 
 
-            // Optional: Check collision with nodes (if nodes themselves should be obstacles)
-            // for (const node of nodes) {
-            //     if (node.color === 'white') { // Only check white nodes
-            //          const dist = distance({x: checkX, y: checkY}, {x: node.x, y: node.y}); // Use the position being checked
-            //          if (dist < triangleRadiusWorld + nodeRadius * zoomLevel + collisionBuffer) { // nodeRadius needs to be world units for this check
-            //              return true; // Collision detected with a white node
-            //          }
-            //     }
-            // }
-
-            return false; // No collision detected with walls
+            return false; // No collision detected with walls or nodes
         }
 
 
@@ -1168,18 +1352,69 @@
             const nextTriangleX = triangleX + potentialVx;
             const nextTriangleY = triangleY + potentialVy;
 
-            // Check for collisions at the potential next position
-            const collidingSegment = findClosestWhiteSegment(nextTriangleX, nextTriangleY);
+            // --- Collision Response ---
 
             let finalVx = potentialVx;
             let finalVy = potentialVy;
 
-            if (collidingSegment) {
-                // Collision detected with a white segment - adjust velocity to slide along the wall
+            const segmentCollisionRadius = triangleCollisionRadius + collisionBuffer;
+            const nodeCollisionCheckRadius = triangleCollisionRadius + nodeCollisionRadius + collisionBuffer;
+
+
+            // Find the closest white segment and its distance
+            let closestSegment = null;
+            let minSegmentDistance = Infinity;
+            for (const segment of segments) {
+                if (segment.color === 'white') {
+                    const dist = pointToSegmentDistance(nextTriangleX, nextTriangleY, segment.node1.x, segment.node1.y, segment.node2.x, segment.node2.y);
+                    if (dist < segmentCollisionRadius && dist < minSegmentDistance) {
+                        minSegmentDistance = dist;
+                        closestSegment = segment;
+                    }
+                }
+            }
+
+             // Find the closest white node and its distance
+             let closestNode = null;
+             let minNodeDistance = Infinity;
+             for (const node of nodes) {
+                  if (node.color === 'white') {
+                       const dist = distance({x: nextTriangleX, y: nextTriangleY}, {x: node.x, y: node.y});
+                       if (dist < nodeCollisionCheckRadius && dist < minNodeDistance) {
+                            minNodeDistance = dist;
+                            closestNode = node;
+                       }
+                  }
+             }
+
+
+             // Prioritize node collision if it's closer or within a certain proximity
+             if (closestNode && (minNodeDistance <= minSegmentDistance || minNodeDistance < triangleCollisionRadius * 2)) {
+                 // Collision detected with a node - stop linear movement
+                 finalVx = 0;
+                 finalVy = 0;
+                 console.log("Collision with Node detected. Stopping movement.");
+
+                 // Optional: Push triangle out of the node if stuck
+                 const currentDistToNode = distance({x: triangleX, y: triangleY}, {x: closestNode.x, y: closestNode.y});
+                 const penetrationDepthNode = (triangleCollisionRadius + nodeCollisionRadius + collisionBuffer) - currentDistToNode;
+                 if (penetrationDepthNode > 0) {
+                      const normalX = triangleX - closestNode.x;
+                      const normalY = triangleY - closestNode.y;
+                      const normalLen = Math.sqrt(normalX * normalX + normalY * normalY);
+                       if (normalLen > 0) {
+                            triangleX += (normalX / normalLen) * penetrationDepthNode;
+                            triangleY += (normalY / normalLen) * penetrationDepthNode;
+                       }
+                 }
+
+
+             } else if (closestSegment) {
+                // Collision detected with a segment - adjust velocity to slide along the wall
 
                 // Calculate the segment vector
-                const segX = collidingSegment.node2.x - collidingSegment.node1.x;
-                const segY = collidingSegment.node2.y - collidingSegment.node1.y;
+                const segX = closestSegment.node2.x - closestSegment.node1.x;
+                const segY = closestSegment.node2.y - closestSegment.node1.y;
 
                 const segLenSq = segX * segX + segY * segY;
 
@@ -1198,21 +1433,19 @@
                     finalVy = velocityParallelComponent * segDirY;
 
                      // Optional: Adjust position slightly to push it out of the wall if it got stuck inside
-                     // This is a simple fix; more advanced physics would handle penetration depth
-                     const currentDist = pointToSegmentDistance(triangleX, triangleY, collidingSegment.node1.x, collidingSegment.node1.y, collidingSegment.node2.x, collidingSegment.node2.y);
-                     const triangleRadiusWorld = triangleSize / 2;
-                     const penetrationDepth = (triangleRadiusWorld + collisionBuffer) - currentDist;
+                     const currentDistToSegment = pointToSegmentDistance(triangleX, triangleY, closestSegment.node1.x, closestSegment.node1.y, closestSegment.node2.x, closestSegment.node2.y);
+                     const penetrationDepthSegment = (triangleCollisionRadius + collisionBuffer) - currentDistToSegment;
 
-                     if (penetrationDepth > 0) {
+                     if (penetrationDepthSegment > 0) {
                           // Calculate the wall normal vector (perpendicular to segment)
                           let normalX = -segDirY;
                           let normalY = segDirX;
 
                           // Find the closest point on the segment to the triangle's current position
-                           const t = ((triangleX - collidingSegment.node1.x) * (collidingSegment.node2.x - collidingSegment.node1.x) + (triangleY - collidingSegment.node1.y) * (collidingSegment.node2.y - collidingSegment.node2.y)) / segLenSq;
+                           const t = ((triangleX - closestSegment.node1.x) * (closestSegment.node2.x - closestSegment.node1.x) + (triangleY - closestSegment.node1.y) * (closestSegment.node2.y - closestSegment.node1.y)) / segLenSq;
                            const clampedT = Math.max(0, Math.min(1, t));
-                           const closestPointX = collidingSegment.node1.x + clampedT * (collidingSegment.node2.x - collidingSegment.node1.x);
-                           const closestPointY = collidingSegment.node1.y + clampedT * (collidingSegment.node2.y - collidingSegment.node2.y);
+                           const closestPointX = closestSegment.node1.x + clampedT * (closestSegment.node2.x - closestSegment.node1.x);
+                           const closestPointY = closestSegment.node1.y + clampedT * (closestSegment.node2.y - closestSegment.node1.y);
 
                            const triangleToSegmentX = closestPointX - triangleX;
                            const triangleToSegmentY = closestPointY - triangleY;
@@ -1224,13 +1457,13 @@
                            }
 
                           // Adjust the triangle's position to resolve penetration
-                          triangleX -= normalX * penetrationDepth;
-                          triangleY -= normalY * penetrationDepth;
+                          triangleX -= normalX * penetrationDepthSegment;
+                          triangleY -= normalY * penetrationDepthSegment;
                      }
 
 
                 } else {
-                    // If segment is a point, just stop linear movement
+                    // If segment is a point (should be handled by node collision now), just stop linear movement
                     finalVx = 0;
                     finalVy = 0;
                 }
@@ -1337,7 +1570,7 @@
                 // In this state, just draw the current scene (level objects, triangle, timer)
                 // Physics updates are skipped.
                 drawPlacedObjects();
-                drawTriangle();
+                drawTriangle(); // Triangle is now hidden in level_complete state
                 // Timer is already visible and colored yellow
             }
             // If gameState is 'menu', 'account', or 'saving_level', only clearing happens (menus/forms are HTML/CSS)
@@ -1457,7 +1690,7 @@
                      // --- Level Editing Click/Drag Logic ---
                     const canvasRect = canvas.getBoundingClientRect();
                     const mouseX = e.clientX - canvasRect.left;
-                    const mouseY = e.clientY - canvasRect.top;
+                    const mouseY = e.clientY - canvasRect.top; // Corrected to use canvasRect.top
                     const worldX = (mouseX - canvas.width / 2) / zoomLevel + cameraX;
                     const worldY = (mouseY - canvas.height / 2) / zoomLevel + cameraY;
 
@@ -1549,7 +1782,7 @@
             if (gameState === 'level_creating') { // Start if (gameState === 'level_creating')
                  const canvasRect = canvas.getBoundingClientRect();
                  const mouseX = e.clientX - canvasRect.left;
-                 const mouseY = e.clientY - canvasRect.top;
+                 const mouseY = e.clientY - canvasRect.top; // Corrected to use canvasRect.top
                  const worldX = (mouseX - canvas.width / 2) / zoomLevel + cameraX;
                  const worldY = (mouseY - canvas.height / 2) / zoomLevel + cameraY;
 
@@ -1566,7 +1799,7 @@
                                 lastMouseX = e.clientX; // Start camera drag from current mouse position
                                 lastMouseY = e.clientY;
                            } else if (!draggedNode && !selectedSegment && !selectedFinishLine && ( (selectedColor === 'white' && isWhitePlacementActive) || (selectedColor === 'black' && activeBlackNode !== null) ) ) {
-                                // White color, placement active, empty space drag, OR black color, activeBlackNode set - should not drag camera
+                                // White color, placement active, empty space drag, OR black color, activeBlackNode set, drag on empty space - should not drag camera
                                 // isDragging is true, but no draggedNode, so the camera drag logic below won't run.
                                 // Cursor is already 'grabbing' from mousedown.
                            } else if (draggedNode) {
@@ -1613,7 +1846,7 @@
             if (gameState === 'level_creating') { // Start if (gameState === 'level_creating')
                 const canvasRect = canvas.getBoundingClientRect();
                 const mouseX = e.clientX - canvasRect.left;
-                const mouseY = e.clientY - canvasRect.top;
+                const mouseY = e.clientY - canvasRect.top; // Corrected to use canvasRect.top
                 const worldX = (mouseX - canvas.width / 2) / zoomLevel + cameraX;
                 const worldY = (mouseY - canvas.height / 2) / zoomLevel + cameraY;
 
@@ -1848,20 +2081,24 @@
 
                 const canvasRect = canvas.getBoundingClientRect();
                 const mouseX = e.clientX - canvasRect.left;
-                const mouseY = e.clientY - canvasRect.clientY; // Use clientY for consistency
-                // const mouseY = e.clientY - canvasRect.top; // Original line
+                const mouseY = e.clientY - canvasRect.top; // Corrected to use canvasRect.top
 
-                const mouseWorldXBefore = (mouseX - canvas.width / 2) / zoomLevel + cameraX;
-                const mouseWorldYBefore = (mouseY - canvas.height / 2) / zoomLevel + cameraY;
+                // Store zoomLevel before update
+                const zoomLevelBefore = zoomLevel;
 
                 zoomLevel *= zoomFactor;
                 zoomLevel = Math.max(creatorMinZoom, Math.min(zoomLevel, creatorMaxZoom));
 
-                const mouseWorldXAfter = (mouseX - canvas.width / 2) / zoomLevel + cameraX;
-                const mouseWorldYAfter = (mouseY - canvas.height / 2) / zoomLevel + cameraY;
+                // Calculate the change in camera position needed to keep the point under the mouse fixed
+                // The formula is: new_camera = old_camera + (mouse_screen_pos - canvas_center) * (1/new_zoom - 1/old_zoom)
+                // Rearranged to find the delta camera position: delta_camera = (mouse_screen_pos - canvas_center) * (1/old_zoom - 1/new_zoom)
+                const deltaCameraX = (mouseX - canvas.width / 2) * (1 / zoomLevelBefore - 1 / zoomLevel);
+                const deltaCameraY = (mouseY - canvas.height / 2) * (1 / zoomLevelBefore - 1 / zoomLevel);
 
-                cameraX -= (mouseWorldXAfter - mouseWorldXBefore);
-                cameraY -= (mouseWorldYAfter - mouseWorldYBefore);
+
+                cameraX += deltaCameraX;
+                cameraY += deltaCameraY;
+
             } // End if (gameState === 'level_creating')
         }); // End wheel handler and addEventListener call
 
@@ -1938,13 +2175,12 @@
                  const users = JSON.parse(localStorage.getItem('triangleGameUsers') || '{}');
                  // Check if the user exists and has the level
                  if (users[loggedInUser] && users[loggedInUser].levels && users[loggedInUser].levels[levelName]) {
-                     if (confirm(`Are you sure you want to delete your level "${levelName}"?`)) {
-                         delete users[loggedInUser].levels[levelName];
-                         localStorage.setItem('triangleGameUsers', JSON.stringify(users));
-                         console.log(`Level "${levelName}" deleted for user "${loggedInUser}".`);
-                         displayMessage(`Level "${levelName}" deleted.`);
-                         listLevels(activeLevelList); // Refresh the list
-                     }
+                      // Removed confirmation popup
+                     delete users[loggedInUser].levels[levelName];
+                     localStorage.setItem('triangleGameUsers', JSON.stringify(users));
+                     console.log(`Level "${levelName}" deleted for user "${loggedInUser}".`);
+                     displayMessage(`Level "${levelName}" deleted.`);
+                     listLevels(activeLevelList); // Refresh the list
                  } else {
                      console.warn(`Attempted to delete non-existent level "${levelName}" for user "${loggedInUser}".`);
                      displayMessage(`Level "${levelName}" not found.`, true);
@@ -1954,13 +2190,12 @@
                   if (loggedInUser === 'HamBadem2') {
                       const officialLevels = JSON.parse(localStorage.getItem('officialLevels') || '{}');
                        if (officialLevels[levelName]) {
-                           if (confirm(`Are you sure you want to delete the official level "${levelName}"?`)) {
-                                delete officialLevels[levelName];
-                                localStorage.setItem('officialLevels', JSON.stringify(officialLevels));
-                                console.log(`Official level "${levelName}" deleted by HamBadem2.`);
-                                displayMessage(`Official level "${levelName}" deleted.`);
-                                listLevels(activeLevelList); // Refresh the list
-                           }
+                           // Removed confirmation popup
+                            delete officialLevels[levelName];
+                            localStorage.setItem('officialLevels', JSON.stringify(officialLevels));
+                            console.log(`Official level "${levelName}" deleted by HamBadem2.`);
+                            displayMessage(`Official level "${levelName}" deleted.`);
+                            listLevels(activeLevelList); // Refresh the list
                        } else {
                             console.warn(`Attempted to delete non-existent official level "${levelName}".`);
                             displayMessage(`Official level "${levelName}" not found.`, true);
@@ -2265,7 +2500,7 @@
 
         // --- Global Key Listener (Q to Menu, Space to Restart) ---
         window.addEventListener('keydown', (e) => {
-            // Allow Escape key to close forms
+            // Allow Escape key to close forms regardless of state
             if (e.key === 'Escape') {
                  if (gameState === 'account') {
                       // Close account form and return to menu
@@ -2287,7 +2522,11 @@
 
 
             if (e.code === 'KeyQ') { // Handle 'Q' in multiple states
-                if (gameState !== 'menu') { // Only do something if not already in the menu
+                // Check if the active element is NOT an input field (like level name or account form)
+                const isInputFocused = document.activeElement.tagName === 'INPUT';
+
+                // Prevent 'Q' from triggering menu if not already in the menu AND not in saving_level state AND not in account state AND not focused on an input
+                if (gameState !== 'menu' && gameState !== 'saving_level' && gameState !== 'account' && !isInputFocused) {
                      e.preventDefault();
 
                      // --- Return to Menu ---
@@ -2618,7 +2857,7 @@
              canvas.style.display = 'none';
              colorMenuDiv.style.display = 'none';
              creatorControlsDiv.style.display = 'none';
-             segmentEditControlsDiv.style.display = 'none'; // Hide segment edit controls
+             segmentEditControlsDiv.style.display = 'none';
              messageDisplay.style.display = 'none';
 
              // Show the save level form
@@ -2694,80 +2933,76 @@
         deleteSegmentButton.addEventListener('click', () => {
              // Delete button logic applies to either a dragged node, a selected segment, or a selected finish line
              if (draggedNode) {
-                 if (confirm("Are you sure you want to delete this node and all connected segments and finish lines?")) {
-                     // Remove the dragged node from the nodes array
-                     nodes = nodes.filter(node => node !== draggedNode);
-                     console.log("Node deleted:", draggedNode);
+                 // Remove the dragged node from the nodes array
+                 nodes = nodes.filter(node => node !== draggedNode);
+                 console.log("Node deleted:", draggedNode);
 
-                     // Remove any segments connected to this node
-                     segments = segments.filter(seg => seg.node1 !== draggedNode && seg.node2 !== draggedNode);
-                     console.log("Connected segments removed.");
+                 // Remove any segments connected to this node
+                 segments = segments.filter(seg => seg.node1 !== draggedNode && seg.node2 !== draggedNode);
+                 console.log("Connected segments removed.");
 
-                     // Remove any finish lines connected to this node
-                      finishLines = finishLines.filter(fl => fl.node1 !== draggedNode && fl.node2 !== draggedNode);
-                      console.log("Connected finish lines removed.");
+                 // Remove any finish lines connected to this node
+                  finishLines = finishLines.filter(fl => fl.node1 !== draggedNode && fl.node2 !== draggedNode);
+                  console.log("Connected finish lines removed.");
 
 
-                     clearSelection(); // Clear the selection and hide buttons
-                 }
+                 clearSelection(); // Clear the selection and hide buttons
+
              } else if (selectedSegment) {
-                 if (confirm("Are you sure you want to delete this segment?")) {
-                     // Remove the selected segment from the segments array
-                     segments = segments.filter(seg => seg !== selectedSegment);
-                     console.log("Segment deleted.");
+                 // Remove the selected segment from the segments array
+                 segments = segments.filter(seg => seg !== selectedSegment);
+                 console.log("Segment deleted.");
 
-                     // Optional: Clean up isolated nodes
-                     // Check if the nodes connected to the deleted segment are now isolated
-                     // and not part of any other segment or finish line. If so, remove them.
-                     const nodesToRemove = [];
-                     [selectedSegment.node1, selectedSegment.node2].forEach(node => {
-                          const isNodeStillUsedBySegment = segments.some(seg => seg.node1 === node || seg.node2 === node);
-                          const isNodeStillUsedByFinishLine = finishLines.some(fl => fl.node1 === node || fl.node2 === node);
-                          // Also check if it's the active white node for drawing a new segment or active black node
-                          const isNodeActiveWhite = (activeWhiteNode === node);
-                          const isNodeActiveBlack = (activeBlackNode === node);
-
-
-                          if (!isNodeStillUsedBySegment && !isNodeStillUsedByFinishLine && !isNodeActiveWhite && !isNodeActiveBlack) {
-                              nodesToRemove.push(node);
-                          }
-                     });
-
-                     nodes = nodes.filter(node => !nodesToRemove.includes(node));
-                     console.log("Isolated nodes removed:", nodesToRemove);
+                 // Optional: Clean up isolated nodes
+                 // Check if the nodes connected to the deleted segment are now isolated
+                 // and not part of any other segment or finish line. If so, remove them.
+                 const nodesToRemove = [];
+                 [selectedSegment.node1, selectedSegment.node2].forEach(node => {
+                      const isNodeStillUsedBySegment = segments.some(seg => seg.node1 === node || seg.node2 === node);
+                      const isNodeStillUsedByFinishLine = finishLines.some(fl => fl.node1 === node || fl.node2 === node);
+                      // Also check if it's the active white node for drawing a new segment or active black node
+                      const isNodeActiveWhite = (activeWhiteNode === node);
+                      const isNodeActiveBlack = (activeBlackNode === node);
 
 
-                     clearSelection(); // Clear the selection and hide buttons
-                 }
+                      if (!isNodeStillUsedBySegment && !isNodeStillUsedByFinishLine && !isNodeActiveWhite && !isNodeActiveBlack) {
+                          nodesToRemove.push(node);
+                      }
+                 });
+
+                 nodes = nodes.filter(node => !nodesToRemove.includes(node));
+                 console.log("Isolated nodes removed:", nodesToRemove);
+
+
+                 clearSelection(); // Clear the selection and hide buttons
+
              } else if (selectedFinishLine) {
-                  if (confirm("Are you sure you want to delete this finish line?")) {
-                      // Remove the selected finish line from the finishLines array
-                      finishLines = finishLines.filter(fl => fl !== selectedFinishLine);
-                      console.log("Finish line deleted.");
+                  // Remove the selected finish line from the finishLines array
+                  finishLines = finishLines.filter(fl => fl !== selectedFinishLine);
+                  console.log("Finish line deleted.");
 
-                      // Optional: Clean up isolated nodes
-                      // Check if the nodes connected to the deleted finish line are now isolated
-                      // and not part of any other segment or finish line. If so, remove them.
-                      const nodesToRemove = [];
-                      [selectedFinishLine.node1, selectedFinishLine.node2].forEach(node => {
-                           const isNodeStillUsedBySegment = segments.some(seg => seg.node1 === node || seg.node2 === node);
-                           const isNodeStillUsedByFinishLine = finishLines.some(fl => fl.node1 === node || fl.node2 === node);
-                           // Also check if it's the active white node for drawing a new segment or active black node
-                           const isNodeActiveWhite = (activeWhiteNode === node);
-                           const isNodeActiveBlack = (activeBlackNode === node);
-
-
-                           if (!isNodeStillUsedBySegment && !isNodeStillUsedByFinishLine && !isNodeActiveWhite && !isNodeActiveBlack) {
-                               nodesToRemove.push(node);
-                           }
-                      });
-
-                      nodes = nodes.filter(node => !nodesToRemove.includes(node));
-                      console.log("Isolated nodes removed:", nodesToRemove);
+                  // Optional: Clean up isolated nodes
+                  // Check if the nodes connected to the deleted finish line are now isolated
+                  // and not part of any other segment or finish line. If so, remove them.
+                  const nodesToRemove = [];
+                  [selectedFinishLine.node1, selectedFinishLine.node2].forEach(node => {
+                       const isNodeStillUsedBySegment = segments.some(seg => seg.node1 === node || seg.node2 === node);
+                       const isNodeStillUsedByFinishLine = finishLines.some(fl => fl.node1 === node || fl.node2 === node);
+                       // Also check if it's the active white node for drawing a new segment or active black node
+                       const isNodeActiveWhite = (activeWhiteNode === node);
+                       const isNodeActiveBlack = (activeBlackNode === node);
 
 
-                      clearSelection(); // Clear the selection and hide buttons
-                  }
+                       if (!isNodeStillUsedBySegment && !isNodeStillUsedByFinishLine && !isNodeActiveWhite && !isNodeActiveBlack) {
+                           nodesToRemove.push(node);
+                       }
+                  });
+
+                  nodes = nodes.filter(node => !nodesToRemove.includes(node));
+                  console.log("Isolated nodes removed:", nodesToRemove);
+
+
+                  clearSelection(); // Clear the selection and hide buttons
              }
         });
 
@@ -2902,9 +3137,5 @@
         // updateAccountUI(); // Update account related UI on load - now called in window.onload
 
     </script>
-</body>
-</html>
-<!-- partial -->
-  
 </body>
 </html>
